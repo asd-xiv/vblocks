@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json.schemastore.org/swcrc",
+  "minify": true,
+  "sourceMaps": true,
+  "env": {
+    "mode": "entry",
+    "coreJs": "3.22",
+    "targets": "> 0.25%, not dead"
+  },
+  "jsc": {
+    "externalHelpers": true,
+    "minify": {
+      "format": {
+        "comments": "all"
+      }
+    },
+    "parser": {
+      "syntax": "typescript",
+      "tsx": true,
+      "dynamicImport": true
+    },
+    "transform": {
+      "react": {
+        "runtime": "automatic"
+      }
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "$schema": "https://json.schemastore.org/tsconfig",
+  "extends": "@asd14/ts-config/targets/node",
+  "compilerOptions": {
+    "rootDir": "./",
+    "outDir": "./dist/types"
+  },
+  "include": ["src", "eslint.config.js"],
+  "exclude": ["node_modules", "dist", "coverage"]
+}

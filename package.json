@@ -1,0 +1,79 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "@asd14/vblocks",
+  "version": "0.1.0",
+  "description": "󱆃 POSIX +  Webpack, an unlikely story!",
+  "sideEffects": false,
+  "publishConfig": {
+    "access": "public"
+  },
+  "nx": {
+    "tags": [
+      "type:lib",
+      "target:react"
+    ]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/deckr41/mono.git",
+    "directory": "packages/@asd14/libs/vblocks"
+  },
+  "files": [
+    "bin",
+    ".swcrc",
+    "webpack.config.js"
+  ],
+  "type": "module",
+  "bin": {
+    "vblocks": "bin/vblocks.sh"
+  },
+  "scripts": {
+    "----UTIL": "",
+    "format": "eslint --fix .",
+    "----CODE-ANALYSIS": "",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --quiet"
+    ]
+  },
+  "dependencies": {
+    "@csstools/postcss-global-data": "^3.0.0",
+    "@mdx-js/loader": "^3.1.0",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.15",
+    "browserslist": "^4.24.4",
+    "copy-webpack-plugin": "^12.0.2",
+    "css-loader": "^7.1.2",
+    "cssnano": "^7.0.6",
+    "dotenv-webpack": "^8.1.0",
+    "html-webpack-plugin": "^5.6.3",
+    "mini-css-extract-plugin": "^2.9.2",
+    "postcss": "^8.5.1",
+    "postcss-loader": "^8.1.1",
+    "postcss-preset-env": "^10.1.3",
+    "react-refresh": "^0.16.0",
+    "style-loader": "^4.0.0",
+    "swc-loader": "^0.2.6",
+    "tailwindcss": "^4.0.3",
+    "webpack": "^5.97.1",
+    "webpack-bundle-analyzer": "^4.10.2",
+    "webpack-cli": "^6.0.1",
+    "webpack-dev-server": "^5.2.0"
+  },
+  "devDependencies": {
+    "@asd14/eslint-config": "^0.1.0",
+    "@asd14/prettier-config": "^0.1.0",
+    "@asd14/ts-config": "^0.1.0",
+    "@types/dotenv-webpack": "^7.0.8",
+    "@types/webpack-bundle-analyzer": "^4.7.0",
+    "eslint": "^9.19.0",
+    "prettier": "^3.4.2",
+    "typescript": "^5.7.3"
+  },
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  }
+}
