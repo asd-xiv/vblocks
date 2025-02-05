@@ -1,3 +1,3 @@
 # vblocks
 
-> 󱆃 POSIX +  Webpack, an unlikely story!
+> 📜 POSIX + 📦 Webpack, an unlikely story!
