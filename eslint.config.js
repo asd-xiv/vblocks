@@ -1,20 +1,16 @@
-import { tsNodeConfig, devFilesConfig } from "@asd14/eslint-config"
+import { tsNodeConfig, commonIgnores } from "@asd14/eslint-config/typescript"
+
+const SRC_FILES = ["src/**/*.js", "bin/**/*.js"]
+const TEST_FILES = ["src/**/*.test.ts"]
+const DEV_FILES = ["eslint.config.js"]
 
 /** @type {import("eslint").Linter.Config[]} */
 export default [
   {
-    ...tsNodeConfig,
-    files: ["src/**/*.{js,ts}", "eslint.config.js"],
-    languageOptions: {
-      ...tsNodeConfig.languageOptions,
-      parserOptions: {
-        ...tsNodeConfig.languageOptions.parserOptions,
-        tsconfigRootDir: import.meta.dirname,
-      },
-    },
+    ignores: [...commonIgnores],
   },
   {
-    ...devFilesConfig,
-    files: ["eslint.config.js"],
+    ...tsNodeConfig,
+    files: [...SRC_FILES, ...DEV_FILES, ...TEST_FILES],
   },
 ]
