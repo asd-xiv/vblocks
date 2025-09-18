@@ -15,13 +15,11 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/deckr41/mono.git",
-    "directory": "packages/@asd14/libs/vblocks"
+    "url": "git+https://github.com/asd-xiv/vblocks.git"
   },
   "files": [
     "bin",
-    ".swcrc",
-    "webpack.config.js"
+    "src"
   ],
   "type": "module",
   "bin": {
@@ -29,51 +27,55 @@
   },
   "scripts": {
     "----UTIL": "",
+    "prepare": "git config --local core.hooksPath .githook",
     "format": "eslint --fix .",
     "----CODE-ANALYSIS": "",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit"
   },
-  "lint-staged": {
-    "*.{js,jsx,ts,tsx}": [
-      "eslint --quiet"
-    ]
-  },
   "dependencies": {
-    "@csstools/postcss-global-data": "^3.0.0",
-    "@mdx-js/loader": "^3.1.0",
-    "@pmmmwh/react-refresh-webpack-plugin": "^0.5.15",
-    "browserslist": "^4.24.4",
-    "copy-webpack-plugin": "^12.0.2",
+    "@csstools/postcss-global-data": "^3.1.0",
+    "@mdx-js/loader": "^3.1.1",
+    "@pmmmwh/react-refresh-webpack-plugin": "^0.6.1",
+    "browserslist": "^4.26.2",
+    "copy-webpack-plugin": "^13.0.1",
     "css-loader": "^7.1.2",
-    "cssnano": "^7.0.6",
-    "dotenv-webpack": "^8.1.0",
-    "html-webpack-plugin": "^5.6.3",
-    "mini-css-extract-plugin": "^2.9.2",
-    "postcss": "^8.5.1",
-    "postcss-loader": "^8.1.1",
-    "postcss-preset-env": "^10.1.3",
-    "react-refresh": "^0.16.0",
+    "cssnano": "^7.1.1",
+    "dotenv-webpack": "^8.1.1",
+    "html-webpack-plugin": "^5.6.4",
+    "mini-css-extract-plugin": "^2.9.4",
+    "postcss": "^8.5.6",
+    "postcss-loader": "^8.2.0",
+    "postcss-preset-env": "^10.3.1",
+    "react-refresh": "^0.17.0",
     "style-loader": "^4.0.0",
     "swc-loader": "^0.2.6",
-    "tailwindcss": "^4.0.3",
-    "webpack": "^5.97.1",
+    "tailwindcss": "^4.1.13",
+    "webpack": "^5.101.3",
     "webpack-bundle-analyzer": "^4.10.2",
     "webpack-cli": "^6.0.1",
-    "webpack-dev-server": "^5.2.0"
+    "webpack-dev-server": "^5.2.2"
   },
   "devDependencies": {
-    "@asd14/eslint-config": "^0.1.0",
-    "@asd14/prettier-config": "^0.1.0",
-    "@asd14/ts-config": "^0.1.0",
+    "@asd14/eslint-config": "^14.4.0",
+    "@asd14/prettier-config": "^1.1.0",
+    "@asd14/ts-config": "^1.1.0",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "@semantic-release/git": "^10.0.1",
     "@types/dotenv-webpack": "^7.0.8",
     "@types/webpack-bundle-analyzer": "^4.7.0",
-    "eslint": "^9.19.0",
-    "prettier": "^3.4.2",
-    "typescript": "^5.7.3"
+    "conventional-changelog-conventionalcommits": "^9.1.0",
+    "eslint": "^9.35.0",
+    "prettier": "^3.6.2",
+    "semantic-release": "^24.2.8",
+    "typescript": "^5.9.2"
   },
   "peerDependencies": {
     "react": "^18 || ^19",
     "react-dom": "^18 || ^19"
+  },
+  "engines": {
+    "node": ">=20"
   }
 }
