@@ -1,6 +1,6 @@
 {
-  "$schema": "https://json.schemastore.org/swcrc",
-  "minify": true,
+  "$schema": "https://swc.rs/schema.json",
+  "minify": false,
   "sourceMaps": true,
   "env": {
     "mode": "entry",
