@@ -1,4 +1,7 @@
-# vblocks
+[![Release](https://github.com/asd-xiv/vblocks/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/asd-xiv/vblocks/actions/workflows/release.yml)
+[![npm version](https://img.shields.io/npm/v/@asd14/vblocks.svg)](https://www.npmjs.com/package/@asd14/vblocks)
+
+# @asd14/vblocks
 
 > 📜 POSIX + 📦 Webpack, an unlikely story!
 
@@ -14,10 +17,47 @@ modern toolchain integration.
 - **Development Experience** - Hot reload, React Refresh, bundle analysis
 - **Production Ready** - Optimized builds with code splitting and caching
 
+<!-- vim-markdown-toc GFM -->
+
+- [Installation](#installation)
+  - [Peer Dependencies](#peer-dependencies)
+- [Usage](#usage)
+  - [Quick Start](#quick-start)
+  - [Project Structure](#project-structure)
+- [How It Works](#how-it-works)
+- [Configuration](#configuration)
+  - [Supported Configuration Files](#supported-configuration-files)
+  - [Configuration Override Example](#configuration-override-example)
+- [Commands](#commands)
+  - [`vblocks serve`](#vblocks-serve)
+  - [`vblocks build`](#vblocks-build)
+  - [`vblocks eject webpack`](#vblocks-eject-webpack)
+- [Features in Detail](#features-in-detail)
+  - [CSS Modules Support](#css-modules-support)
+  - [Asset Handling](#asset-handling)
+  - [Environment Variables](#environment-variables)
+  - [Path Aliases](#path-aliases)
+- [License](#license)
+
+<!-- vim-markdown-toc -->
+
 ## Installation
 
 ```sh
 npm install --save-dev @asd14/vblocks
+```
+
+### Peer Dependencies
+
+This package requires and assumes you already installed:
+
+```json
+{
+  "peerDependencies": {
+    "react": "^18 || ^19",
+    "react-dom": "^18 || ^19"
+  }
+}
 ```
 
 ## Usage
@@ -66,8 +106,7 @@ VBlocks is a **POSIX shell script wrapper** around Webpack that:
 
 ## Configuration
 
-VBlocks follows a **configuration hierarchy** - project files take precedence
-over defaults:
+Project files take precedence over defaults:
 
 1. **Project configs** (in your project root) - highest priority
 2. **Default configs** (from vblocks package) - fallback
@@ -172,18 +211,6 @@ Built-in alias for cleaner imports:
 import { Component } from "@self/components"
 ```
 
-## Peer Dependencies
-
-```json
-{
-  "peerDependencies": {
-    "react": "^18 || ^19",
-    "react-dom": "^18 || ^19"
-  }
-}
-```
-
 ## License
 
 BSD 3-Clause
-
