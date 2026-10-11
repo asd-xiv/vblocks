@@ -1,4 +1,4 @@
-import { tsNodeConfig, commonIgnores } from "@asd14/eslint-config/typescript"
+import { tsConfig, commonIgnores } from "@asd14/eslint-config/ts"
 
 const SRC_FILES = ["src/**/*.js", "bin/**/*.js"]
 const TEST_FILES = ["src/**/*.test.ts"]
@@ -10,7 +10,7 @@ export default [
     ignores: [...commonIgnores],
   },
   {
-    ...tsNodeConfig,
+    ...tsConfig,
     files: [...SRC_FILES, ...DEV_FILES, ...TEST_FILES],
   },
 ]
