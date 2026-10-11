@@ -30,7 +30,7 @@ const loadSwcConfig = () => {
   return {
     ...typedConfig,
     env: {
-      targets: "> 0.25, not dead",
+      targets: "> 0.25%, not dead",
       ...typedConfig.env,
     },
   }
