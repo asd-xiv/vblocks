@@ -5,17 +5,18 @@
 
 > 📜 POSIX + 📦 Webpack, an unlikely story!
 
-Zero-config Webpack wrapper for React applications with opinionated defaults and
-modern toolchain integration.
+VBlocks runs Webpack for React single-page applications with default Webpack,
+PostCSS and SWC configs. A project needs no config of its own.
 
 ## Features
 
-- **Zero Configuration** - Works out of the box with sensible defaults
-- **Convention over Configuration** - Smart project structure detection
-- **Modern Toolchain** - SWC, TailwindCSS, PostCSS, CSS Modules, MDX support
-- **Flexible Configuration** - Project configs override defaults when present
-- **Development Experience** - Hot reload, React Refresh, bundle analysis
-- **Production Ready** - Optimized builds with code splitting and caching
+- **No configs** - a project builds from `src/index.tsx` and `src/index.html`
+  alone
+- **Loaders** - SWC for TypeScript, PostCSS, CSS Modules, MDX
+- **Your config replaces the default** - see [Configuration](#configuration)
+- **`serve`** - Hot Module Replacement, React Refresh, bundle analyzer
+- **`build`** - minified output, a separate `react` chunk, content-hashed JS and
+  CSS file names, or one standalone HTML file
 
 <!-- vim-markdown-toc GFM -->
 
@@ -24,19 +25,21 @@ modern toolchain integration.
 - [Usage](#usage)
   - [Quick Start](#quick-start)
   - [Project Structure](#project-structure)
-- [How It Works](#how-it-works)
 - [Configuration](#configuration)
-  - [Supported Configuration Files](#supported-configuration-files)
-  - [Configuration Override Example](#configuration-override-example)
 - [Commands](#commands)
   - [`vblocks serve`](#vblocks-serve)
   - [`vblocks build`](#vblocks-build)
-  - [`vblocks eject webpack`](#vblocks-eject-webpack)
+  - [`vblocks eject`](#vblocks-eject)
 - [Features in Detail](#features-in-detail)
+  - [TypeScript](#typescript)
+  - [PostCSS](#postcss)
   - [CSS Modules Support](#css-modules-support)
   - [Asset Handling](#asset-handling)
   - [Environment Variables](#environment-variables)
-  - [Path Aliases](#path-aliases)
+  - [Path Alias](#path-alias)
+- [How It Works](#how-it-works)
+- [FAQ](#faq)
+  - [Does VBlocks support Tailwind?](#does-vblocks-support-tailwind)
 - [License](#license)
 
 <!-- vim-markdown-toc -->
@@ -47,17 +50,15 @@ modern toolchain integration.
 npm install --save-dev @asd14/vblocks
 ```
 
+> [!IMPORTANT]  
+> VBlocks needs Node 24 or later.
+
 ### Peer Dependencies
 
-This package requires and assumes you already installed:
+VBlocks needs React 18 or 19 in your project:
 
-```json
-{
-  "peerDependencies": {
-    "react": "^18 || ^19",
-    "react-dom": "^18 || ^19"
-  }
-}
+```sh
+npm install react react-dom
 ```
 
 ## Usage
@@ -65,152 +66,309 @@ This package requires and assumes you already installed:
 ### Quick Start
 
 ```sh
-# Start development server
+# Start the dev server
 npx vblocks serve
 
 # Build for production
 npx vblocks build
 
-# View webpack configuration
+# Print the default Webpack config
 npx vblocks eject webpack
 ```
 
 ### Project Structure
 
-VBlocks expects a standard React project structure:
+VBlocks reads `src/` and `.env`, and writes `dist/`:
 
-```
+```text
 your-project/
 ├── src/
 │   ├── index.tsx          # Application entry point
 │   ├── index.html         # HTML template
-│   ├── index.css          # Global styles (optional)
+│   ├── index.css          # Global CSS, optional
 │   └── public/
-│       ├── favicon.svg    # Favicon (optional)
-│       └── robots.txt     # Robots file (optional)
-├── .env                   # Environment variables (optional)
+│       ├── favicon.svg    # Optional, VBlocks has a default
+│       └── robots.txt     # Optional, VBlocks has a default
+├── .env                   # Optional
 └── dist/                  # Build output
 ```
 
-## How It Works
-
-VBlocks is a **POSIX shell script wrapper** around Webpack that:
-
-1. **Detects configuration files** - Uses project configs when available, falls
-   back to defaults
-2. **Sets environment variables** - Passes config paths to Webpack via env vars
-3. **Proxies commands** - `build` and `serve` are passed directly to `webpack`
-   with custom parameters
-4. **Provides configuration inspection** - `eject` outputs configuration content
-   for review
-
 ## Configuration
 
-Project files take precedence over defaults:
+A config in your project root replaces the default of the same name.
 
-1. **Project configs** (in your project root) - highest priority
-2. **Default configs** (from vblocks package) - fallback
+- `webpack.config.js`
+- `postcss.config.js`
+- `.swcrc`
 
-### Supported Configuration Files
+To replace a default, first [`eject`](#vblocks-eject) it into your project root,
+then edit the file:
 
-- `webpack.config.js` - Webpack configuration
-- `postcss.config.js` - PostCSS configuration
-- `tailwind.config.js` - TailwindCSS configuration
-- `.swcrc` - SWC configuration
-
-### Configuration Override Example
-
-Create any of these files in your project root to customize behavior:
-
-```js
-// tailwind.config.js - customize TailwindCSS
-export default {
-  content: ["./src/**/*.{ts,tsx}"],
-  theme: {
-    extend: {
-      colors: {
-        primary: "#your-color"
-      }
-    }
-  }
-}
+```sh
+npx vblocks eject postcss > postcss.config.js
 ```
+
+> [!NOTE]  
+> VBlocks does not merge your config with the default, with two exceptions:
+>
+> - `.swcrc -> env.targets`: VBlocks adds the default when yours has none
+> - `.swcrc -> jsc.transform.react.refresh`: VBlocks adds the React Refresh
+>   transform when `serve` runs in `development` mode
 
 ## Commands
 
 ### `vblocks serve`
 
-**Proxies to**:
-`npx webpack serve --config $VB_WEBPACK_CONFIG --env entryDir=$PROJECT_DIR ...`
+```text
+vblocks serve [--mode <mode>] [<webpack option>...]
+```
 
-Starts development server with:
+Starts the dev server. Without `--port`, it listens on `http://localhost:8080`.
 
-- Hot Module Replacement
-- Automatic browser opening
-- Bundle analyzer (non-opening)
-- Error overlay
-- History API fallback for SPAs
+| Parameter          | Required | Default       | Description                                                                                                                                                    |
+| ------------------ | -------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--mode <mode>`    | no       | `development` | The Webpack mode, `development` or `production`. React Refresh runs only in `development`                                                                      |
+| `<webpack option>` | no       | none          | Any other [`webpack serve`](https://webpack.js.org/configuration/dev-server/) option, eg. `--port 3000` or `--no-open`. VBlocks passes it to Webpack unchanged |
+
+The dev server:
+
+- Replaces changed modules without a page reload, with Hot Module Replacement
+  and React Refresh
+- Opens the browser
+- Runs the bundle analyzer at `http://127.0.0.1:8888`. VBlocks does not open it
+  in the browser
+- Serves `index.html` for every unknown path, for applications that use the
+  History API
+
+**Runs**:
+
+```sh
+npx webpack serve --config <webpack config> \
+  --env entryDir=<project root> \
+  --mode development \
+  [...your arguments]
+```
 
 ### `vblocks build`
 
-**Proxies to**:
-`npx webpack build --config $VB_WEBPACK_CONFIG --env entryDir=$PROJECT_DIR ...`
+```text
+vblocks build [--mode <mode>] [--env single] [<webpack option>...]
+```
 
-Creates production build with:
+Builds the project into `dist/`.
 
-- Minified assets
-- Content hashing
-- Optimized chunks
-- Performance hints
+| Parameter          | Required | Default      | Description                                                                                                                            |
+| ------------------ | -------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `--mode <mode>`    | no       | `production` | The Webpack mode, `development` or `production`. The build minifies JS, CSS and HTML only in `production`                              |
+| `--env single`     | no       | off          | Build one standalone `dist/index.html`                                                                                                 |
+| `<webpack option>` | no       | none         | Any other [`webpack build`](https://webpack.js.org/api/cli/) option, eg. `--stats errors-only`. VBlocks passes it to Webpack unchanged |
 
-### `vblocks eject webpack`
+Without `--env single`, the build:
 
-**Special command** - Outputs the webpack configuration to stdout for
-inspection:
+- Writes JS and CSS files with content-hashed names
+- Writes a `react` chunk, and a `vendors` chunk when your other dependencies
+  total over 20 KB
+
+With `--env single`:
+
+- `dist/index.html` holds every script, stylesheet, image, font and the favicon
+- A browser opens the file from disk, with no server and no network
+- Keep the route in the URL hash. On `file://`, `history.pushState` to another
+  path throws
+
+**Runs**:
+
+```sh
+npx webpack build --config <webpack config> \
+  --env entryDir=<project root> \
+  --mode production \
+  [...your arguments]
+```
+
+### `vblocks eject`
+
+```text
+vblocks eject <config>
+```
+
+Prints a default config to stdout.
+
+| Parameter  | Required | Default | Description                                        |
+| ---------- | -------- | ------- | -------------------------------------------------- |
+| `<config>` | yes      | none    | The config to print: `webpack`, `postcss` or `swc` |
+
+Save the output in your project root to [replace the default](#configuration):
 
 ```sh
 npx vblocks eject webpack > webpack.config.js
+npx vblocks eject postcss > postcss.config.js
+npx vblocks eject swc > .swcrc
 ```
 
 ## Features in Detail
 
+### TypeScript
+
+VBlocks does not check types or configure TypeScript. It only compiles it with
+SWC.
+
+For convenience, VBlocks provides client types in
+[`client.d.ts`](src/types/client.d.ts) for:
+
+- `.css` imports
+- Image and font imports
+- `process.env`
+
+You can use them in your `tsconfig.json`:
+
+```json
+{
+  "compilerOptions": {
+    "types": ["@asd14/vblocks/client"]
+  }
+}
+```
+
+`tsc` needs the [`@self`](#path-alias) path alias in your `tsconfig.json`:
+
+```diff
+{
+  "compilerOptions": {
+    "types": ["@asd14/vblocks/client"],
++   "paths": { "@self/*": ["./src/*"] }
+  }
+}
+```
+
+### PostCSS
+
+The default `postcss.config.js`:
+
+```js
+/**
+ * @param {{ mode: "production" | "development" | "none" }} api
+ */
+export default ({ mode }) => ({
+  plugins: {
+    "postcss-preset-env": {
+      stage: 2,
+    },
+    "cssnano": mode === "production" && {
+      preset: "default",
+    },
+  },
+})
+```
+
+`postcss-preset-env` compiles nesting, `oklch()` and `color-mix()` for older
+browsers and adds vendor prefixes.
+
 ### CSS Modules Support
 
-- **Global CSS** - `import './styles.css'`
-- **Local CSS Modules** - `import styles from './component.module.css'`
+- **Global CSS** - `import "./styles.css"`
+- **Local CSS Modules** - `import styles from "./component.module.css"`
 - **camelCase exports** - `.my-class` becomes `styles.myClass`
-- **Development-friendly naming** - includes class names in dev builds
+- **Class names** - a bare hash in `production` mode, `[local]__[hash]` in
+  `development` mode
+- **TypeScript** - the [client types](#typescript) declare `.css` imports
 
 ### Asset Handling
 
-- **Images** - Automatic optimization, inlined if < 10KB
-- **Fonts** - Copied to `fonts/` directory
-- **Favicon & Robots** - Automatically included in build
+- **Images** - the build inlines `jpg`, `gif`, `png` and `svg` files up to 10 KB
+- **Fonts** - the build writes `woff`, `woff2`, `ttf` and `eot` files to
+  `dist/fonts/`
+- **Favicon and `robots.txt`** - yours or the default. `--env single` leaves
+  `robots.txt` out
 
 ### Environment Variables
 
-VBlocks automatically loads `.env` files in your project root:
+VBlocks loads the `.env` file in your project root:
 
 ```env
-# .env
-REACT_APP_API_URL=https://api.example.com
+API_URL=https://api.example.com
 ```
 
-Access in your code:
+Read a variable in your code:
 
 ```tsx
-const apiUrl = process.env.REACT_APP_API_URL
+const apiUrl = process.env["API_URL"]
 ```
 
-### Path Aliases
+Webpack replaces each `process.env` read with the variable's value. A variable
+that `.env` does not set reads as `undefined`. The build leaves out every
+variable your code does not read.
 
-Built-in alias for cleaner imports:
+The [client types](#typescript) declare `process.env` and nothing else from
+Node, because Webpack replaces nothing else. With the client types, `tsc` fails
+on `process.cwd()` and `Buffer`.
+
+### Path Alias
+
+`@self` points at your `src/` directory:
 
 ```tsx
-// Instead of: import { Component } from '../../../components'
+// Instead of: import { Component } from "../../../components"
 import { Component } from "@self/components"
+```
+
+`tsc` needs the same alias in your `tsconfig.json`. See
+[TypeScript](#typescript).
+
+## How It Works
+
+VBlocks is a POSIX shell script that runs Webpack. The script exports
+`VB_POSTCSS_CONFIG` and `VB_SWC_CONFIG`, the paths of the configs it picked. The
+Webpack config reads them.
+
+## FAQ
+
+### Does VBlocks support Tailwind?
+
+Yes, VBlocks supports Tailwind but does not include it, so you need a
+`postcss.config.js` in your project root.
+
+1. Install Tailwind and the Tailwind plugin for PostCSS:
+
+```sh
+npm install --save-dev tailwindcss @tailwindcss/postcss
+```
+
+2. Eject the default PostCSS config into your project root:
+
+```sh
+npx vblocks eject postcss > postcss.config.js
+```
+
+3. Replace `postcss-preset-env` with the Tailwind plugin:
+
+```diff
+ export default ({ mode }) => ({
+   plugins: {
+-    "postcss-preset-env": {
+-      stage: 2,
+-    },
++    "@tailwindcss/postcss": {
++      optimize: mode === "production",
++    },
+     "cssnano": mode === "production" && {
+       preset: "default",
+     },
+   },
+ })
+```
+
+> [!IMPORTANT]  
+> `postcss-preset-env` is not needed and conflict with Tailwind 4's built-in CSS
+> transforms. See
+> [Tailwind's upgrade guide](https://tailwindcss.com/docs/upgrade-guide) for
+> details.
+
+4. Add this import to `src/index.css`:
+
+```css
+@import "tailwindcss";
 ```
 
 ## License
 
-BSD 3-Clause
+MIT
