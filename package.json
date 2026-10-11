@@ -3,6 +3,7 @@
   "name": "@asd14/vblocks",
   "version": "1.0.0",
   "description": "󱆃 POSIX +  Webpack, an unlikely story!",
+  "license": "MIT",
   "sideEffects": false,
   "publishConfig": {
     "access": "public"
