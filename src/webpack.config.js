@@ -21,8 +21,10 @@ if (!VB_POSTCONFIG_PATH)
 
 /**
  * Load, parse and provide targets defaults for SWC configuration
+ *
+ * @param {{ hasReactRefresh: boolean }} options
  */
-const loadSwcConfig = () => {
+const loadSwcConfig = ({ hasReactRefresh }) => {
   const content = fs.readFileSync(VB_SWC_CONFIG, "utf8")
   const config = /** @type {unknown} */ (JSON.parse(content))
   const typedConfig = /** @type {import("@swc/core").Config} */ (config)
@@ -32,6 +34,19 @@ const loadSwcConfig = () => {
     env: {
       targets: "> 0.25%, not dead",
       ...typedConfig.env,
+    },
+    jsc: {
+      ...typedConfig.jsc,
+      transform: {
+        ...typedConfig.jsc?.transform,
+        react: {
+          ...typedConfig.jsc?.transform?.react,
+          // SWC marks components and their hooks, `ReactRefreshWebpackPlugin`
+          // loads the runtime that reads the marks. One without the other
+          // breaks the page
+          ...(hasReactRefresh ? { development: true, refresh: true } : {}),
+        },
+      },
     },
   }
 }
@@ -150,7 +165,8 @@ export default ({ entryDir, robotsPath, faviconPath, single }, { mode }) => {
   const isProduction = mode === "production"
   const isServe = process.argv[2] == "serve"
   const isSingle = Boolean(single) && !isServe
-  const swcConfig = loadSwcConfig()
+  const hasReactRefresh = isServe && mode === "development"
+  const swcConfig = loadSwcConfig({ hasReactRefresh })
   const commonPostCSSConfigs = createCssModuleConfig(isProduction)
 
   const paths = {
@@ -358,7 +374,7 @@ export default ({ entryDir, robotsPath, faviconPath, single }, { mode }) => {
           openAnalyzer: false,
         }),
 
-      isServe && new ReactRefreshWebpackPlugin(),
+      hasReactRefresh && new ReactRefreshWebpackPlugin(),
     ].filter(Boolean),
 
     resolve: {
