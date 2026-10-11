@@ -21,7 +21,7 @@
 
 # Directory where this script is located and
 # default configuration file paths (from this package).
-export VB_DIR="$(dirname "$(dirname "$(readlink -f "$0")")")"
+export VB_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
 
 # Project directory (where you run the command from) and
 # project-specific config file paths.
