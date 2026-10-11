@@ -10,13 +10,13 @@
 # ---
 # build: Creates a production-ready build of your project
 # serve: Starts a development server with live reload
-# eject: Copies default webpack and swc configs to your project for customization
+# eject: Prints a default config, save it in your project to customize it
 #
 # Usage Examples:
 # ---
 # npx vblocks build    # Build for production
 # npx vblocks serve    # Start dev server
-# npx vblocks eject    # Copy config files to your project
+# npx vblocks eject webpack > webpack.config.js    # Customize a config
 # =============================================================================
 
 # Directory where this script is located and
@@ -61,17 +61,6 @@ run_webpack() {
     "$@"
 }
 
-# Copy config files to your project
-copy_config_files() {
-  project_path="$PROJECT_DIR/$1"
-  default_path=$(realpath "$VB_DIR/$1")
-
-  if [ ! -f "$project_path" ]; then
-    cp "$default_path" "$project_path" \
-      && echo "Created $1 in your project" >&2
-  fi
-}
-
 print_hero() {
   version=$(node -p "require('$VB_DIR/package.json').version")
   bold='\033[1m'
@@ -110,7 +99,8 @@ print_hero() {
 # │ Main
 # ╰────────
 
-print_hero
+# stdout carries the config `eject` prints, keep the hero out of it
+print_hero >&2
 
 case "$1" in
   build)
@@ -127,7 +117,13 @@ case "$1" in
 
     case "$file" in
       webpack)
-        cat "$VB_DIR/webpack.config.js"
+        cat "$VB_DIR/src/webpack.config.js"
+        ;;
+      postcss)
+        cat "$VB_DIR/src/postcss.config.js"
+        ;;
+      swc)
+        cat "$VB_DIR/src/.swcrc"
         ;;
       *)
         echo "Unknown config file to eject. Available: webpack, postcss and swc" >&2
