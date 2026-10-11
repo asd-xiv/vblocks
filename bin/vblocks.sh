@@ -37,7 +37,6 @@ select_config() {
 # Determine config files location.
 export VB_WEBPACK_CONFIG="$(select_config "webpack.config.js")"
 export VB_POSTCSS_CONFIG="$(select_config "postcss.config.js")"
-export VB_TAILWIND_CONFIG="$(select_config "tailwind.config.js")"
 export VB_SWC_CONFIG="$(select_config ".swcrc")"
 
 # Wrap webpack command with custom configs
@@ -103,7 +102,6 @@ print_hero() {
   printf "│\n"
   printf "│ %b\n" " Webpack: $(format_config_path "$VB_WEBPACK_CONFIG")"
   printf "│ %b\n" " PostCSS: $(format_config_path "$VB_POSTCSS_CONFIG")"
-  printf "│ %b\n" " Tailwind: $(format_config_path "$VB_TAILWIND_CONFIG")"
   printf "│ %b\n" "󱡮 SWC: $(format_config_path "$VB_SWC_CONFIG")"
   printf "╰──┤\n\n"
 }
@@ -132,7 +130,7 @@ case "$1" in
         cat "$VB_DIR/webpack.config.js"
         ;;
       *)
-        echo "Unknown config file to eject. Available: webpack, postcss, tailwind and swc" >&2
+        echo "Unknown config file to eject. Available: webpack, postcss and swc" >&2
         exit 1
         ;;
     esac
