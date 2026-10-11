@@ -1,5 +1,5 @@
 {
   "$schema": "https://json.schemastore.org/semantic-release.json",
-  "branches": ["master"],
+  "branches": ["main"],
   "extends": "@asd14/semantic-release-config"
 }
