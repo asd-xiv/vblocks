@@ -22,6 +22,12 @@
     "src"
   ],
   "type": "module",
+  "exports": {
+    "./client": {
+      "types": "./src/types/client.d.ts"
+    },
+    "./package.json": "./package.json"
+  },
   "bin": {
     "vblocks": "bin/vblocks.sh"
   },
