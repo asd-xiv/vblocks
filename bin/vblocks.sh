@@ -105,11 +105,13 @@ print_hero >&2
 case "$1" in
   build)
     shift
-    run_webpack build "$@"
+    # Without a mode Webpack falls back to `production`, also for `serve`.
+    # A `--mode` in "$@" comes later, so it wins.
+    run_webpack build --mode production "$@"
     ;;
   serve)
     shift
-    run_webpack serve "$@"
+    run_webpack serve --mode development "$@"
     ;;
   eject)
     shift
