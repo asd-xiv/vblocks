@@ -1,10 +1,13 @@
-export default {
+/**
+ * @param {{ mode: "production" | "development" | "none" }} api
+ */
+export default ({ mode }) => ({
   plugins: {
     "postcss-preset-env": {
       stage: 2,
     },
-    // "cssnano": {
-    //   preset: "default",
-    // },
+    "cssnano": mode === "production" && {
+      preset: "default",
+    },
   },
-}
+})
