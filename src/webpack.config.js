@@ -7,6 +7,7 @@ import CopyPlugin from "copy-webpack-plugin"
 import DotenvPlugin from "dotenv-webpack"
 import HtmlWebPackPlugin from "html-webpack-plugin"
 import MiniCssExtractPlugin from "mini-css-extract-plugin"
+import webpack from "webpack"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 
 const VB_SWC_CONFIG = process.env["VB_SWC_CONFIG"]
@@ -56,11 +57,82 @@ const createCssModuleConfig = isProduction => ({
 })
 
 /**
+ * Replace every script, stylesheet and icon tag of the HTML with the content
+ * of the file it points at, then drop that file from the output.
+ *
+ * Lives in this file so an ejected config stays one file.
+ *
+ * @param {import("webpack").Compiler} compiler
+ */
+const inlineAssets = compiler => {
+  compiler.hooks.compilation.tap("inlineAssets", compilation => {
+    /** @param {string} name */
+    const takeAsset = name => {
+      const content = compilation.getAsset(name)?.source.source() ?? ""
+
+      compilation.deleteAsset(name)
+
+      return content
+    }
+
+    /** @param {import("html-webpack-plugin").HtmlTagObject} tag */
+    const inlineTag = tag => {
+      const { src, href, rel } = tag.attributes
+
+      if (tag.tagName === "script" && typeof src === "string")
+        return {
+          ...tag,
+          attributes: {},
+          // The HTML parser reads `</script` and `<!--` inside a script, a
+          // `\x3C` means the same `<` to JavaScript and nothing to the parser
+          innerHTML: takeAsset(src)
+            .toString()
+            .replaceAll("</script", String.raw`\x3C/script`)
+            .replaceAll("<!--", String.raw`\x3C!--`),
+        }
+
+      if (rel === "stylesheet" && typeof href === "string")
+        return {
+          ...tag,
+          tagName: "style",
+          voidTag: false,
+          attributes: {},
+          innerHTML: takeAsset(href)
+            .toString()
+            .replaceAll("</style", String.raw`<\/style`),
+        }
+
+      if (rel === "icon" && typeof href === "string")
+        return {
+          ...tag,
+          attributes: {
+            rel,
+            // `bin/vblocks.sh` only ever passes a `favicon.svg`
+            href: `data:image/svg+xml;base64,${Buffer.from(takeAsset(href)).toString("base64")}`,
+          },
+        }
+
+      return tag
+    }
+
+    HtmlWebPackPlugin.getHooks(compilation).alterAssetTagGroups.tap(
+      "inlineAssets",
+      data => ({
+        ...data,
+        headTags: data.headTags.map(tag => inlineTag(tag)),
+        bodyTags: data.bodyTags.map(tag => inlineTag(tag)),
+      })
+    )
+  })
+}
+
+/**
  * @typedef {Object} VBlocksEnvironment
  *
  * @property {string} entryDir - Target directory from where vblocks cmd was called
  * @property {string} robotsPath - Path to robots.txt copied to the output directory
  * @property {string} faviconPath - Path to favicon.ico copied to the output directory
+ * @property {boolean} [single] - Build one standalone index.html, every asset inlined
  */
 
 /**
@@ -74,9 +146,10 @@ const createCssModuleConfig = isProduction => ({
  * @param {VBlocksProps} props
  * @returns {WebpackConfiguration}
  */
-export default ({ entryDir, robotsPath, faviconPath }, { mode }) => {
+export default ({ entryDir, robotsPath, faviconPath, single }, { mode }) => {
   const isProduction = mode === "production"
   const isServe = process.argv[2] == "serve"
+  const isSingle = Boolean(single) && !isServe
   const swcConfig = loadSwcConfig()
   const commonPostCSSConfigs = createCssModuleConfig(isProduction)
 
@@ -102,7 +175,8 @@ export default ({ entryDir, robotsPath, faviconPath }, { mode }) => {
     mode: mode,
 
     output: {
-      publicPath: "/",
+      // A standalone file opens from disk, where "/" is the filesystem root
+      publicPath: isSingle ? "" : "/",
       path: paths.output,
       // Cannot use 'contenthash' when hot reloading is enabled.
       filename: isServe ? "js/[name].js" : "js/[name].[contenthash].js",
@@ -201,19 +275,27 @@ export default ({ entryDir, robotsPath, faviconPath }, { mode }) => {
         },
         {
           test: /\.(jpg|gif|png|svg)$/,
-          type: "asset",
-          parser: {
-            dataUrlCondition: {
-              maxSize: 10 * 1024,
-            },
-          },
+          ...(isSingle
+            ? { type: "asset/inline" }
+            : {
+                type: "asset",
+                parser: {
+                  dataUrlCondition: {
+                    maxSize: 10 * 1024,
+                  },
+                },
+              }),
         },
         {
           test: /\.(woff|woff2|ttf|eot)$/,
-          type: "asset/resource",
-          generator: {
-            filename: "fonts/[name][ext]",
-          },
+          ...(isSingle
+            ? { type: "asset/inline" }
+            : {
+                type: "asset/resource",
+                generator: {
+                  filename: "fonts/[name][ext]",
+                },
+              }),
         },
       ],
     },
@@ -243,6 +325,9 @@ export default ({ entryDir, robotsPath, faviconPath }, { mode }) => {
       new HtmlWebPackPlugin({
         template: paths.htmlTemplate,
         favicon: paths.favicon,
+        // An inline script ignores `defer` and runs where it stands, so it
+        // must stand after the element the app renders into
+        inject: isSingle ? "body" : "head",
       }),
 
       new MiniCssExtractPlugin({
@@ -253,14 +338,20 @@ export default ({ entryDir, robotsPath, faviconPath }, { mode }) => {
         path: paths.dotenv,
       }),
 
-      new CopyPlugin({
-        patterns: [
-          {
-            from: paths.robots,
-            to: "robots.txt",
-          },
-        ],
-      }),
+      !isSingle &&
+        new CopyPlugin({
+          patterns: [
+            {
+              from: paths.robots,
+              to: "robots.txt",
+            },
+          ],
+        }),
+
+      // A dynamic `import()` would otherwise emit a second file
+      isSingle && new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+
+      isSingle && inlineAssets,
 
       isServe &&
         new BundleAnalyzerPlugin({
@@ -285,7 +376,7 @@ export default ({ entryDir, robotsPath, faviconPath }, { mode }) => {
       runtimeChunk: false,
 
       // Extract node_module dependencies into a separate chunk for better caching
-      splitChunks: {
+      splitChunks: !isSingle && {
         chunks: "all",
         cacheGroups: {
           react: {
@@ -305,7 +396,8 @@ export default ({ entryDir, robotsPath, faviconPath }, { mode }) => {
     },
 
     performance: {
-      hints: isProduction ? "warning" : false,
+      // A standalone file is over the size limit by design
+      hints: isProduction && !isSingle ? "warning" : false,
     },
   }
 }
