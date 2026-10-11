@@ -40,7 +40,6 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@csstools/postcss-global-data": "^3.1.0",
     "@mdx-js/loader": "^3.1.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.6.3",
     "browserslist": "^4.29.3",
@@ -54,7 +53,6 @@
     "postcss-loader": "^8.2.1",
     "postcss-preset-env": "^11.6.1",
     "react-refresh": "^0.19.0",
-    "style-loader": "^4.0.0",
     "swc-loader": "^0.2.7",
     "webpack": "^5.111.1",
     "webpack-bundle-analyzer": "^5.4.0",
