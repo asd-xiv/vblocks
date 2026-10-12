@@ -1,4 +1,4 @@
-[![Release](https://github.com/asd-xiv/vblocks/actions/workflows/release.yml/badge.svg?branch=main)](https://github.com/asd-xiv/vblocks/actions/workflows/release.yml)
+[![Release](https://github.com/asd-xiv/vblocks/actions/workflows/main.yml/badge.svg?branch=main)](https://github.com/asd-xiv/vblocks/actions/workflows/main.yml)
 [![npm version](https://img.shields.io/npm/v/@asd14/vblocks.svg)](https://www.npmjs.com/package/@asd14/vblocks)
 
 # @asd14/vblocks
