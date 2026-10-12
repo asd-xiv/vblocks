@@ -20,7 +20,8 @@
   },
   "files": [
     "bin",
-    "src"
+    "src",
+    "template"
   ],
   "type": "module",
   "exports": {
@@ -36,9 +37,11 @@
     "----UTIL": "",
     "prepare": "git config --local core.hooksPath .githook",
     "format": "eslint --fix .",
-    "----CODE-ANALYSIS": "",
+    "----CODE-QA": "",
     "lint": "eslint .",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "unit-test:template": "tools/verify-templates",
+    "unit-test": "npm run unit-test:template"
   },
   "dependencies": {
     "@mdx-js/loader": "^3.1.1",
@@ -68,11 +71,14 @@
     "@asd14/ts-config": "^1.6.0",
     "@commitlint/cli": "^21.2.3",
     "@commitlint/config-conventional": "^21.2.3",
+    "@tailwindcss/postcss": "^4.3.3",
     "@types/dotenv-webpack": "^7.0.8",
     "@types/webpack-bundle-analyzer": "^4.7.0",
+    "@xyflow/react": "^12.12.0",
     "eslint": "^9.39.5",
     "prettier": "^3.9.10",
     "semantic-release": "^25.0.9",
+    "tailwindcss": "^4.3.3",
     "typescript": "^6.0.3"
   },
   "peerDependencies": {

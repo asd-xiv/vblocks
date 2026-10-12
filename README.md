@@ -5,18 +5,11 @@
 
 > 📜 POSIX + 📦 Webpack, an unlikely story!
 
-VBlocks runs Webpack for React single-page applications with default Webpack,
-PostCSS and SWC configs. A project needs no config of its own.
-
 ## Features
 
-- **No configs** - a project builds from `src/index.tsx` and `src/index.html`
-  alone
-- **Loaders** - SWC for TypeScript, PostCSS, CSS Modules, MDX
-- **Your config replaces the default** - see [Configuration](#configuration)
-- **`serve`** - Hot Module Replacement, React Refresh, bundle analyzer
-- **`build`** - minified output, a separate `react` chunk, content-hashed JS and
-  CSS file names, or one standalone HTML file
+- **No configs** - All you need are `src/index.tsx` and `src/index.html`
+- **Built in** - SWC for TypeScript, PostCSS, CSS Modules, MDX, React Refresh,
+  bundle analyzer
 
 <!-- vim-markdown-toc GFM -->
 
@@ -27,6 +20,7 @@ PostCSS and SWC configs. A project needs no config of its own.
   - [Project Structure](#project-structure)
 - [Configuration](#configuration)
 - [Commands](#commands)
+  - [`vblocks init`](#vblocks-init)
   - [`vblocks serve`](#vblocks-serve)
   - [`vblocks build`](#vblocks-build)
   - [`vblocks eject`](#vblocks-eject)
@@ -55,15 +49,27 @@ npm install --save-dev @asd14/vblocks
 
 ### Peer Dependencies
 
-VBlocks needs React 18 or 19 in your project:
-
 ```sh
 npm install react react-dom
 ```
 
+> [!IMPORTANT]  
+> VBlocks needs React `^18` or `^19`.
+
 ## Usage
 
 ### Quick Start
+
+Create a project and start the dev server:
+
+```sh
+npx @asd14/vblocks init my-app
+cd my-app
+npm install
+npm start
+```
+
+Run a command in a project that has VBlocks installed:
 
 ```sh
 # Start the dev server
@@ -78,18 +84,16 @@ npx vblocks eject webpack
 
 ### Project Structure
 
-VBlocks reads `src/` and `.env`, and writes `dist/`:
-
 ```text
 your-project/
 ├── src/
 │   ├── index.tsx          # Application entry point
 │   ├── index.html         # HTML template
-│   ├── index.css          # Global CSS, optional
+│   ├── index.css          # Global CSS (optional)
 │   └── public/
-│       ├── favicon.svg    # Optional, VBlocks has a default
-│       └── robots.txt     # Optional, VBlocks has a default
-├── .env                   # Optional
+│       ├── favicon.svg    # Favicon (optional)
+│       └── robots.txt     # Crawler instructions (optional)
+├── .env                   # Environment variables (optional)
 └── dist/                  # Build output
 ```
 
@@ -116,6 +120,47 @@ npx vblocks eject postcss > postcss.config.js
 >   transform when `serve` runs in `development` mode
 
 ## Commands
+
+### `vblocks init`
+
+```text
+vblocks init <directory> [--template <name>]
+```
+
+Creates a project in `<directory>` from a template.
+
+| Parameter           | Required | Default | Description                                                                                      |
+| ------------------- | -------- | ------- | ------------------------------------------------------------------------------------------------ |
+| `<directory>`       | yes      | none    | The project root. `init` creates it when it is missing and fails when it exists and is not empty |
+| `--template <name>` | no       | `plain` | The template to copy: `plain` or `xyflow-playground`                                             |
+
+| Template            | `src/index.tsx`                                   | `dependencies`                                                 | Tailwind                                                                                                      |
+| ------------------- | ------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `plain`             | Hello World!                                      | `react`, `react-dom`                                           | no                                                                                                            |
+| `xyflow-playground` | Renders a graph of nodes you can drag and connect | `react`, `react-dom`, [`@xyflow/react`](https://reactflow.dev) | yes, `package.json`, `postcss.config.js` and `src/index.css` hold [the setup](#does-vblocks-support-tailwind) |
+
+`init` writes:
+
+```text
+<directory>/
+├── src/
+│   ├── index.tsx      # Application entry point
+│   ├── index.html     # HTML template
+│   └── index.css      # Global CSS
+├── .gitignore         # node_modules, dist, .env
+├── package.json
+├── postcss.config.js  # Only in xyflow-playground
+└── tsconfig.json
+```
+
+Run `init` through `npx @asd14/vblocks`. `init` installs no dependencies, so
+install them next:
+
+```sh
+npx @asd14/vblocks init my-flow --template xyflow-playground
+cd my-flow
+npm install
+```
 
 ### `vblocks serve`
 
@@ -209,8 +254,8 @@ npx vblocks eject swc > .swcrc
 
 ### TypeScript
 
-VBlocks does not check types or configure TypeScript. It only compiles it with
-SWC.
+VBlocks does not check types and never reads your `tsconfig.json`. It only
+compiles TypeScript with SWC.
 
 For convenience, VBlocks provides client types in
 [`client.d.ts`](src/types/client.d.ts) for:
@@ -239,6 +284,8 @@ You can use them in your `tsconfig.json`:
   }
 }
 ```
+
+The `tsconfig.json` that [`vblocks init`](#vblocks-init) writes has both.
 
 ### PostCSS
 
@@ -358,16 +405,19 @@ npx vblocks eject postcss > postcss.config.js
 ```
 
 > [!IMPORTANT]  
-> `postcss-preset-env` is not needed and conflict with Tailwind 4's built-in CSS
-> transforms. See
-> [Tailwind's upgrade guide](https://tailwindcss.com/docs/upgrade-guide) for
-> details.
+> You do not need `postcss-preset-env`. Tailwind 4
+> [compiles nesting and adds vendor prefixes](https://tailwindcss.com/docs/compatibility)
+> itself. With both plugins, `postcss-preset-env` rewrites Tailwind's `@layer`
+> rules into `:not(#\#)` selectors. The CSS file grows.
 
 4. Add this import to `src/index.css`:
 
 ```css
 @import "tailwindcss";
 ```
+
+The `xyflow-playground` template of [`vblocks init`](#vblocks-init) has this
+setup.
 
 ## License
 

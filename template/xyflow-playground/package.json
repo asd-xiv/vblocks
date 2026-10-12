@@ -1,0 +1,26 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "vblocks-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vblocks serve",
+    "build": "vblocks build",
+    "build:single": "vblocks build --env single",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@xyflow/react": "^12",
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@asd14/ts-config": "^1.6.0",
+    "@asd14/vblocks": "*",
+    "@tailwindcss/postcss": "^4",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^6"
+  }
+}

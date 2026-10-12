@@ -1,0 +1,92 @@
+#!/bin/sh
+
+set -eu
+
+# NAME
+#   verify-templates - Build every template `vblocks init` writes
+#
+# SYNOPSIS
+#   verify-templates [OPTIONS]
+#
+# DESCRIPTION
+#   For each template in `template/`, runs `vblocks init` into `tmp/<name>`,
+#   then `vblocks build` and `vblocks build --env single` there. A template is
+#   a folder whose name has no `_` prefix.
+#
+#   Installs nothing. Each project resolves its dependencies from the
+#   `node_modules` of this repo, so a dependency of a template must also be a
+#   `devDependencies` entry here.
+#
+# OPTIONS
+#   -h, --help    Print this help
+#
+# EXAMPLE
+#   tools/verify-templates
+#
+# EXIT CODES
+#   0   Every template built
+#   2   Invalid usage
+#   3   A template did not scaffold or build
+#
+# SEE ALSO
+#   bin/vblocks.sh
+
+ROOT_DIR=$(dirname "$(dirname "$(realpath "$0")")")
+VBLOCKS_SCRIPT="$ROOT_DIR/bin/vblocks.sh"
+OUT_DIR="$ROOT_DIR/tmp"
+
+# ╭───
+# │ Primitives
+# ╰───
+
+# build_template <name>
+#
+# Scaffold the template <name> into `tmp/<name>` and build it both ways.
+build_template() {
+  build_dir="$OUT_DIR/$1"
+
+  rm -rf -- "$build_dir"
+  "$VBLOCKS_SCRIPT" init "$build_dir" --template "$1"
+
+  (
+    cd -- "$build_dir"
+    "$VBLOCKS_SCRIPT" build
+    "$VBLOCKS_SCRIPT" build --env single
+  )
+}
+
+# ╭───
+# │ Bootstrap
+# ╰───
+
+case "${1:-}" in
+  -h | --help)
+    sed -n '/^# NAME$/,/^$/p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+  "") ;;
+  *)
+    printf 'Usage: verify-templates [-h | --help]\n' >&2
+    exit 2
+    ;;
+esac
+
+# ╭───
+# │ Main
+# ╰───
+
+for TEMPLATE_DIR in "$ROOT_DIR"/template/*/; do
+  [ -d "$TEMPLATE_DIR" ] || continue
+  TEMPLATE=$(basename "$TEMPLATE_DIR")
+
+  case "$TEMPLATE" in
+    _*) continue ;;
+  esac
+
+  if ! build_template "$TEMPLATE"; then
+    printf 'Template "%s" did not scaffold or build\n' "$TEMPLATE" >&2
+    exit 3
+  fi
+done
+
+exit 0

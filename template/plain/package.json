@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json.schemastore.org/package.json",
+  "name": "vblocks-app",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "start": "vblocks serve",
+    "build": "vblocks build",
+    "build:single": "vblocks build --env single",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "react": "^19",
+    "react-dom": "^19"
+  },
+  "devDependencies": {
+    "@asd14/ts-config": "^1.6.0",
+    "@asd14/vblocks": "*",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "typescript": "^6"
+  }
+}
