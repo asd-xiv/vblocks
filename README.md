@@ -51,7 +51,7 @@ npm install --save-dev @asd14/vblocks
 ```
 
 > [!IMPORTANT]  
-> VBlocks needs Node 24 or later.
+> VBlocks needs Node `^22.22.3`, `^24.15.0` or `>=26.0`.
 
 ### Peer Dependencies
 
