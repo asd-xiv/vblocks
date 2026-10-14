@@ -15,11 +15,11 @@
 #
 # Usage Examples:
 # ---
-# npx vblocks init my-app    # Create a project in ./my-app
-# npx vblocks init my-flow --template xyflow-playground
-# npx vblocks build    # Build for production
-# npx vblocks serve    # Start dev server
-# npx vblocks eject webpack > webpack.config.js    # Customize a config
+# npx vblocks init my-app                         # Create a project in ./my-app
+# npx vblocks init my-flow --template xyflow      # Create a project with a specific template
+# npx vblocks build                               # Build for production
+# npx vblocks serve                               # Start dev server
+# npx vblocks eject webpack > webpack.config.js   # Customize a config
 # =============================================================================
 
 # Directory where this script is located and
