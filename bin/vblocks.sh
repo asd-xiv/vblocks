@@ -1,107 +1,156 @@
-#!/usr/bin/env sh
+#!/bin/sh
 
-# =============================================================================
-# VBLOCKS - Webpack with opinionated configs
-# =============================================================================
-# This script helps JavaScript developers run common Webpack tasks without
-# needing to remember complex command line arguments.
+set -eu
+
+# NAME
+#   vblocks - Run Webpack with the configs of VBlocks, write a project
 #
-# Available Commands:
-# ---
-# init: Creates a new project from the template
-# build: Creates a production-ready build of your project
-# serve: Starts a development server with live reload
-# eject: Prints a default config, save it in your project to customize it
+# SYNOPSIS
+#   vblocks init <directory> [--template <name>] [--only <app|plumbing>]
+#   vblocks serve [--prefix <directory>] [<webpack option>...]
+#   vblocks build [--prefix <directory>] [<webpack option>...]
+#   vblocks eject <webpack|postcss|swc>
+#   vblocks -h | --help
 #
-# Usage Examples:
-# ---
-# npx vblocks init my-app                         # Create a project in ./my-app
-# npx vblocks init my-flow --template xyflow      # Create a project with a specific template
-# npx vblocks init demos --only plumbing          # Create a project for several apps
-# npx vblocks init demos/one --only app           # Add an app to it
-# npx vblocks build                               # Build for production
-# npx vblocks build --prefix one                  # Build the app in ./one
-# npx vblocks serve                               # Start dev server
-# npx vblocks eject webpack > webpack.config.js   # Customize a config
-# =============================================================================
+# DESCRIPTION
+#   The app folder holds src/index.tsx and src/index.html. A config in it,
+#   webpack.config.js, postcss.config.js or .swcrc, replaces the default of
+#   VBlocks with the same name.
+#
+#     init    Write a template into <directory>, which must be missing or
+#             empty. A template has two parts: the plumbing, the files of
+#             the project root, and the app. Without --only, write both.
+#             After each part, run its post-init hooks in <directory>
+#     serve   Start the development server, in development mode
+#     build   Build the app into dist/ in the app folder, in production mode
+#     eject   Print a default config, to save in the app folder
+#
+#   serve and build pass every other option to Webpack, eg. --mode or
+#   --env single.
+#
+# OPTIONS
+#   --template <name>       init: plain or xyflow (default: plain)
+#   --only <part>           init: write only the app or only the plumbing.
+#                           The app goes into a project: the nearest folder
+#                           above <directory> with a package.json
+#   --prefix <directory>    serve, build: the app folder (default: the
+#                           current folder)
+#   -h, --help              Print this help
+#
+# ENVIRONMENT
+#   NO_COLOR   Disables color in the summary of serve and build when set and
+#              non-empty
+#
+# EXAMPLE
+#   npx @asd14/vblocks init my-app
+#   npx @asd14/vblocks init demos --only plumbing
+#   npx @asd14/vblocks init demos/flow --template xyflow --only app
+#   npx vblocks build --prefix flow --env single
+#   npx vblocks eject postcss > postcss.config.js
+#
+# EXIT CODES
+#   0   Done
+#   2   Invalid usage, or Webpack rejected an option or the config
+#   3   Could not run: a missing tool or project, a failed copy, hook or
+#       build
+#
+# SEE ALSO
+#   webpack, npm
 
-# Directory where this script is located and
-# default configuration file paths (from this package).
-export VB_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
+# npm links the command to this file, so "$0" names the link. realpath follows
+# it to the package
+VB_DIR=$(dirname "$(dirname "$(realpath "$0")")")
 
-# The hooks of a template read it
-export VB_VERSION="$(node -p "require('$VB_DIR/package.json').version")"
+# `cd` follows an exported CDPATH and prints the folder it picked, which
+# `$(cd ... && pwd)` would capture
+unset CDPATH
 
-# `serve` and `build` take `--prefix <directory>`, the app folder. Take it out
-# of the arguments, Webpack gets the rest
-PREFIX=""
-case "${1:-}" in
-  serve | build)
-    prefix_count=$#
-    while [ "$prefix_count" -gt 0 ]; do
-      prefix_arg=$1
-      shift
-      prefix_count=$((prefix_count - 1))
+# ╭───
+# │ Settings
+# ╰───
 
-      if [ "$prefix_arg" = "--prefix" ]; then
-        if [ "$prefix_count" -eq 0 ]; then
-          echo "--prefix needs a directory" >&2
-          exit 1
-        fi
-        PREFIX=$1
-        shift
-        prefix_count=$((prefix_count - 1))
-      else
-        set -- "$@" "$prefix_arg"
-      fi
-    done
-    ;;
-esac
+COMMAND=""           # init, serve, build or eject
+INIT_DIR=""          # init <directory>
+TEMPLATE="plain"     # init --template
+PARTS="plumbing app" # init --only, "plumbing" or "app"
+PREFIX=""            # serve/build --prefix, the app folder
+EJECT_CONFIG=""      # eject <config>
 
-if [ -n "$PREFIX" ] && [ ! -d "$PREFIX" ]; then
-  printf '%s is not a directory\n' "$PREFIX" >&2
-  exit 1
-fi
+# ╭───
+# │ Primitives
+# ╰───
 
-# App directory: the --prefix folder, or where you run the command from
-export PROJECT_DIR="$(cd -- "${PREFIX:-.}" && pwd)"
-
-# Choose between project-specific and default configs. Project files take precedence.
-select_config() {
-  project_path="$PROJECT_DIR/$1"
-  default_path=$(realpath "$VB_DIR/src/$1")
-  [ -f "$project_path" ] && echo "$project_path" || echo "$default_path"
+# fail <code> <message>
+#
+# Print <message> to stderr, then exit with <code>.
+fail() {
+  printf 'vblocks: %s\n' "$2" >&2
+  exit "$1"
 }
 
-# Determine config files location.
-export VB_WEBPACK_CONFIG="$(select_config "webpack.config.js")"
-export VB_POSTCSS_CONFIG="$(select_config "postcss.config.js")"
-export VB_SWC_CONFIG="$(select_config ".swcrc")"
-
-# Wrap webpack command with custom configs
-run_webpack() {
-  action=$1
-  shift 1
-
-  robots_path="$PROJECT_DIR/src/public/robots.txt"
-  if [ ! -f "$robots_path" ]; then
-    robots_path="$VB_DIR/src/public/robots.txt"
-  fi
-
-  favicon_path="$PROJECT_DIR/src/public/favicon.svg"
-  if [ ! -f "$favicon_path" ]; then
-    favicon_path="$VB_DIR/src/public/favicon.svg"
-  fi
-
-  npx webpack "$action" --config "$VB_WEBPACK_CONFIG" \
-    --env "entryDir=$PROJECT_DIR" \
-    --env "robotsPath=$robots_path" \
-    --env "faviconPath=$favicon_path" \
-    "$@"
+# show_help
+#
+# Print the man page: the comment block that starts at the NAME line.
+show_help() {
+  sed -n '/^# NAME$/,/^$/p' "$0" | sed 's/^# \{0,1\}//'
 }
 
+# require_cmd <cmd>...
+#
+# EXIT
+#   3   The shell finds no <cmd>
+require_cmd() {
+  for require_name in "$@"; do
+    command -v "$require_name" >/dev/null 2>&1 \
+      || fail 3 "$require_name is not installed"
+  done
+}
+
+# has_color
+#
+# RETURNS
+#   0   stderr is a terminal that shows color
+#   1   It is not, or NO_COLOR is set
+has_color() {
+  [ -t 2 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != "dumb" ]
+}
+
+# pick_file <file> <default-file>
+#
+# Print <file> when it exists, otherwise <default-file>.
+pick_file() {
+  if [ -f "$1" ]; then
+    printf '%s\n' "$1"
+  else
+    printf '%s\n' "$2"
+  fi
+}
+
+# shorten_home <path>
+#
+# Print <path> with the home folder as "~".
+shorten_home() {
+  if [ -n "${HOME:-}" ]; then
+    case "$1" in
+      "$HOME"/*)
+        # shellcheck disable=SC2088 # a literal "~", for display
+        printf '~/%s\n' "${1#"$HOME"/}"
+        return 0
+        ;;
+    esac
+  fi
+
+  printf '%s\n' "$1"
+}
+
+# ╭───
+# │ Domain primitives
+# ╰───
+
+# list_templates
+#
 # Print the template names, one per line. A template is a folder in
-# `template/` whose name has no `_` prefix
+# `template/` whose name has no `_` prefix.
 list_templates() {
   for list_dir in "$VB_DIR"/template/*/; do
     [ -d "$list_dir" ] || continue
@@ -114,204 +163,306 @@ list_templates() {
   done
 }
 
-# Copy the parts of a template into a directory that is missing or empty: the
-# `plumbing` of the project root, the `app`, or both. After each part, run its
-# hooks in the directory
-init_project() {
-  init_usage="Usage: vblocks init <directory> [--template <name>] [--only <app|plumbing>]"
-  init_dir=""
-  init_template="plain"
-  init_parts="plumbing app"
+# find_project_root <directory>
+#
+# Print the nearest folder above <directory> that holds a package.json. The
+# folders of <directory> need not exist yet.
+#
+# RETURNS
+#   1   No folder above <directory> holds one
+find_project_root() {
+  case "$1" in
+    /*) root_dir=$1 ;;
+    *) root_dir="$PWD/$1" ;;
+  esac
 
-  while [ "$#" -gt 0 ]; do
-    case "$1" in
-      --template)
-        if [ "$#" -lt 2 ]; then
-          echo "$init_usage" >&2
-          exit 1
-        fi
-        init_template=$2
-        shift 2
-        ;;
-      --only)
-        if [ "$#" -lt 2 ]; then
-          echo "$init_usage" >&2
-          exit 1
-        fi
-        case "$2" in
-          app | plumbing) init_parts=$2 ;;
-          *)
-            echo "$init_usage" >&2
-            exit 1
-            ;;
-        esac
-        shift 2
-        ;;
-      -*)
-        echo "$init_usage" >&2
-        exit 1
-        ;;
-      *)
-        if [ -n "$init_dir" ]; then
-          echo "$init_usage" >&2
-          exit 1
-        fi
-        init_dir=$1
-        shift
-        ;;
-    esac
+  while [ "$root_dir" != "/" ]; do
+    root_dir=$(dirname "$root_dir")
+
+    if [ -f "$root_dir/package.json" ]; then
+      # Drop "." and ".." from the path, the caller compares it with `pwd`
+      (cd -- "$root_dir" && pwd)
+      return 0
+    fi
   done
 
-  if [ -z "$init_dir" ]; then
-    echo "$init_usage" >&2
-    exit 1
-  fi
+  return 1
+}
 
-  init_templates=$(list_templates)
-  if ! printf '%s\n' "$init_templates" | grep -qxF -- "$init_template"; then
-    printf 'Unknown template "%s". Available: %s\n' "$init_template" \
-      "$(printf '%s\n' "$init_templates" | paste -sd, - | sed 's/,/, /g')" >&2
-    exit 1
-  fi
+# init_project <directory> <template> <parts>
+#
+# Copy the <parts> of <template> into <directory>, then run the hooks of each
+# part in it. <parts> is "plumbing", "app" or "plumbing app". A template's file
+# replaces the `_common` file of the same path.
+#
+# EXIT
+#   3   A copy or a hook failed
+init_project() {
+  init_dir=$1
+  init_template=$2
 
-  if [ -e "$init_dir" ] && [ -n "$(ls -A -- "$init_dir")" ]; then
-    printf '%s exists and is not empty\n' "$init_dir" >&2
-    exit 1
-  fi
-
-  mkdir -p -- "$init_dir" || exit 1
-  init_app=$(cd -- "$init_dir" && pwd) || exit 1
-
-  # An app joins a project, the nearest folder above with a package.json. The
-  # app hooks write that package.json
-  if [ "$init_parts" = "app" ]; then
-    init_root=$(dirname "$init_app")
-    until [ -f "$init_root/package.json" ]; do
-      if [ "$init_root" = "/" ]; then
-        printf 'No package.json above %s. Create the project first:\n\n' "$init_dir" >&2
-        printf '  npx @asd14/vblocks init <directory> --only plumbing\n' >&2
-        exit 1
-      fi
-      init_root=$(dirname "$init_root")
-    done
-  fi
-
-  for init_part in $init_parts; do
-    # A template's file replaces the `_common` file of the same path
+  for init_part in $3; do
     for init_source in "$VB_DIR/template/_common" "$VB_DIR/template/$init_template"; do
-      if [ -d "$init_source/$init_part" ]; then
-        cp -R -- "$init_source/$init_part/." "$init_dir" || exit 1
-      fi
+      [ -d "$init_source/$init_part" ] || continue
+
+      cp -R -- "$init_source/$init_part/." "$init_dir" \
+        || fail 3 "Could not copy $init_source/$init_part"
     done
 
     for init_source in "$VB_DIR/template/_common" "$VB_DIR/template/$init_template"; do
       init_hook="$init_source/post-init-$init_part.sh"
       [ -f "$init_hook" ] || continue
 
-      if ! (cd -- "$init_dir" && sh "$init_hook"); then
-        printf 'Hook %s failed\n' "$init_hook" >&2
-        exit 1
-      fi
+      # A hook reads VB_VERSION, and nothing else of this script
+      (cd -- "$init_dir" && VB_VERSION="$VB_VERSION" sh "$init_hook") \
+        || fail 3 "The hook $init_hook failed"
     done
   done
+}
 
-  case "$init_parts" in
-    plumbing)
-      printf 'Created %s. Add an app:\n\n' "$init_dir"
-      printf '  npx @asd14/vblocks init %s/<app> --only app\n' "$init_dir"
-      ;;
-    app)
-      printf 'Created %s. Next, in %s:\n\n' "$init_dir" "$init_root"
-      printf '  npm install\n'
-      printf '  npm start -- --prefix %s\n' "${init_app#"$init_root"/}"
-      ;;
-    *)
-      printf 'Created %s. Next:\n\n' "$init_dir"
-      printf '  cd %s\n' "$init_dir"
-      printf '  npm install\n'
-      printf '  npm start\n'
-      ;;
+# show_config_file <config-file> <app-dir>
+#
+# Print <config-file> with its folder as $PROJECT_DIR, or as $VBLOCKS_DIR in
+# gray for a default config.
+show_config_file() {
+  case "$1" in
+    "$2"/*) printf '%s\n' "\$PROJECT_DIR/${1#"$2"/}" ;;
+    "$VB_DIR"/*) printf '%s\n' "${GRAY}\$VBLOCKS_DIR/${1#"$VB_DIR"/}${RESET}" ;;
+    *) printf '%s\n' "$1" ;;
   esac
 }
 
-print_hero() {
-  version=$VB_VERSION
-  bold='\033[1m'
-  green='\033[32m'
-  blue='\033[34m'
-  gray='\033[90m'
-  reset='\033[0m'
-
-  bold() { echo "${bold}$1${reset}"; }
-  blue() { echo "${blue}$1${reset}"; }
-  green() { echo "${green}$1${reset}"; }
-  gray() { echo "${gray}$1${reset}"; }
-  replace_home() { echo "$1" | sed "s|$HOME|~|g"; }
-  replace_config_base() { echo "$1" | sed "s|$PROJECT_DIR|\$PROJECT_DIR|g" | sed "s|$VB_DIR|\$VBLOCKS_DIR|g"; }
-  format_config_path() {
-    if echo "$1" | grep -q "^$VB_DIR"; then
-      gray "$(replace_config_base "$1")"
-    else
-      replace_config_base "$1"
-    fi
-  }
-
-  printf "╭───────────┤ %b\n" "$(green " VBlocks v${version}")"
-  printf "│ %b\n" "$(bold "󱆃 POSIX +  Webpack, an unlikely story!")"
-  printf "│\n"
-  printf "│ %b\n" "\$PROJECT_DIR: $(replace_home "$PROJECT_DIR")"
-  printf "│ %b\n" "\$VBLOCKS_DIR: $(gray "$(replace_home "$VB_DIR")")"
-  printf "│\n"
-  printf "│ %b\n" " Webpack: $(format_config_path "$VB_WEBPACK_CONFIG")"
-  printf "│ %b\n" " PostCSS: $(format_config_path "$VB_POSTCSS_CONFIG")"
-  printf "│ %b\n" "󱡮 SWC: $(format_config_path "$VB_SWC_CONFIG")"
-  printf "╰──┤\n\n"
+# print_summary <app-dir> <webpack-config> <postcss-config> <swc-config>
+#
+# Print the version, the app folder and the configs Webpack runs with, to
+# stderr.
+print_summary() {
+  {
+    printf '╭───────────┤ %s\n' "${GREEN} VBlocks v${VB_VERSION}${RESET}"
+    printf '│ %s\n' "${BOLD}󱆃 POSIX +  Webpack, an unlikely story!${RESET}"
+    printf '│\n'
+    printf '│ %s\n' "\$PROJECT_DIR: $(shorten_home "$1")"
+    printf '│ %s\n' "\$VBLOCKS_DIR: ${GRAY}$(shorten_home "$VB_DIR")${RESET}"
+    printf '│\n'
+    printf '│ %s\n' " Webpack: $(show_config_file "$2" "$1")"
+    printf '│ %s\n' " PostCSS: $(show_config_file "$3" "$1")"
+    printf '│ %s\n' "󱡮 SWC: $(show_config_file "$4" "$1")"
+    printf '╰──┤\n\n'
+  } >&2
 }
 
-# ╭──────────────────────
-# │ Main
-# ╰────────
+# run_webpack <action> <app-dir> <webpack-config> [<webpack option>...]
+#
+# Run `webpack <action>` for the app in <app-dir>.
+#
+# EXIT
+#   2   Webpack rejected an option or the config
+#   3   Webpack failed
+run_webpack() {
+  webpack_action=$1
+  webpack_app_dir=$2
+  webpack_config=$3
+  shift 3
 
-# stdout carries the config `eject` prints, keep the hero out of it
-print_hero >&2
+  webpack_robots_file=$(pick_file \
+    "$webpack_app_dir/src/public/robots.txt" "$VB_DIR/src/public/robots.txt")
+  webpack_favicon_file=$(pick_file \
+    "$webpack_app_dir/src/public/favicon.svg" "$VB_DIR/src/public/favicon.svg")
 
-case "$1" in
+  webpack_status=0
+  npx webpack "$webpack_action" --config "$webpack_config" \
+    --env "entryDir=$webpack_app_dir" \
+    --env "robotsPath=$webpack_robots_file" \
+    --env "faviconPath=$webpack_favicon_file" \
+    "$@" || webpack_status=$?
+
+  # webpack-cli exits 1 when the build has errors, 2 when an option or the
+  # config is wrong
+  case "$webpack_status" in
+    0) return 0 ;;
+    2) fail 2 "Webpack rejected an option or the config" ;;
+    *) fail 3 "Webpack failed" ;;
+  esac
+}
+
+# ╭───
+# │ Bootstrap
+# ╰───
+
+case "${1:-}" in
+  -h | --help)
+    show_help
+    exit 0
+    ;;
+  "")
+    show_help
+    exit 2
+    ;;
+esac
+
+require_cmd node npx
+
+VB_VERSION=$(node -p 'require(process.argv[1]).version' "$VB_DIR/package.json")
+
+# Color codes for stderr, empty when it shows no color
+BOLD="" GREEN="" GRAY="" RESET=""
+if has_color; then
+  BOLD=$(printf '\033[1m')
+  GREEN=$(printf '\033[32m')
+  GRAY=$(printf '\033[90m')
+  RESET=$(printf '\033[0m')
+fi
+
+# ╭───
+# │ Flags and positionals
+# ╰───
+
+COMMAND=$1
+shift
+
+case "$COMMAND" in
   init)
-    shift
-    init_project "$@"
+    while [ "$#" -gt 0 ]; do
+      case "$1" in
+        --template)
+          [ "$#" -lt 2 ] && fail 2 "--template needs a name"
+          TEMPLATE=$2
+          shift 2
+          ;;
+        --only)
+          [ "$#" -lt 2 ] && fail 2 "--only needs a part, app or plumbing"
+          case "$2" in
+            app | plumbing) PARTS=$2 ;;
+            *) fail 2 "Unknown part \"$2\", use app or plumbing" ;;
+          esac
+          shift 2
+          ;;
+        --)
+          shift
+          if [ "$#" -ne 1 ] || [ -n "$INIT_DIR" ]; then
+            fail 2 "init takes one directory"
+          fi
+          INIT_DIR=$1
+          shift
+          ;;
+        -?*)
+          fail 2 "Unknown flag $1"
+          ;;
+        *)
+          [ -n "$INIT_DIR" ] && fail 2 "init takes one directory"
+          INIT_DIR=$1
+          shift
+          ;;
+      esac
+    done
+
+    [ -z "$INIT_DIR" ] && fail 2 "init needs a directory"
+
+    if ! list_templates | grep -qxF -- "$TEMPLATE"; then
+      fail 2 "Unknown template \"$TEMPLATE\". Available: $(list_templates | paste -sd ' ' -)"
+    fi
     ;;
-  build)
-    shift
-    # Without a mode Webpack falls back to `production`, also for `serve`.
-    # A `--mode` in "$@" comes later, so it wins.
-    run_webpack build --mode production "$@"
-    ;;
-  serve)
-    shift
-    run_webpack serve --mode development "$@"
+  serve | build)
+    # Take --prefix out of the arguments, Webpack gets the rest
+    ARG_COUNT=$#
+    while [ "$ARG_COUNT" -gt 0 ]; do
+      ARG=$1
+      shift
+      ARG_COUNT=$((ARG_COUNT - 1))
+
+      if [ "$ARG" = "--prefix" ]; then
+        [ "$ARG_COUNT" -eq 0 ] && fail 2 "--prefix needs a directory"
+        PREFIX=$1
+        shift
+        ARG_COUNT=$((ARG_COUNT - 1))
+      else
+        set -- "$@" "$ARG"
+      fi
+    done
+
+    if [ -n "$PREFIX" ] && [ ! -d "$PREFIX" ]; then
+      fail 2 "$PREFIX is not a directory"
+    fi
     ;;
   eject)
-    shift
-    file=$1
+    [ "$#" -ne 1 ] && fail 2 "eject needs one config: webpack, postcss or swc"
 
-    case "$file" in
-      webpack)
-        cat "$VB_DIR/src/webpack.config.js"
-        ;;
-      postcss)
-        cat "$VB_DIR/src/postcss.config.js"
-        ;;
-      swc)
-        cat "$VB_DIR/src/.swcrc"
-        ;;
-      *)
-        echo "Unknown config file to eject. Available: webpack, postcss and swc" >&2
-        exit 1
-        ;;
+    case "$1" in
+      webpack) EJECT_CONFIG="webpack.config.js" ;;
+      postcss) EJECT_CONFIG="postcss.config.js" ;;
+      swc) EJECT_CONFIG=".swcrc" ;;
+      *) fail 2 "Unknown config \"$1\", use webpack, postcss or swc" ;;
     esac
     ;;
   *)
-    echo "Usage: $0 {init|build|serve|eject}" >&2
-    exit 1
+    fail 2 "Unknown command \"$COMMAND\", use init, serve, build or eject"
+    ;;
+esac
+
+# ╭───
+# │ Main
+# ╰───
+
+case "$COMMAND" in
+  init)
+    if [ -e "$INIT_DIR" ]; then
+      if [ ! -d "$INIT_DIR" ] || [ -n "$(ls -A -- "$INIT_DIR")" ]; then
+        fail 2 "$INIT_DIR exists and is not an empty folder"
+      fi
+    fi
+
+    # An app joins a project, the app hooks write its package.json
+    PROJECT_ROOT=""
+    if [ "$PARTS" = "app" ]; then
+      PROJECT_ROOT=$(find_project_root "$INIT_DIR") \
+        || fail 3 "No package.json above $INIT_DIR. Write the project first: npx @asd14/vblocks init <directory> --only plumbing"
+    fi
+
+    mkdir -p -- "$INIT_DIR" || fail 3 "Could not create $INIT_DIR"
+    init_project "$INIT_DIR" "$TEMPLATE" "$PARTS"
+
+    case "$PARTS" in
+      plumbing)
+        printf 'Wrote %s. Add an app:\n\n' "$INIT_DIR" >&2
+        printf '  npx @asd14/vblocks init %s/<app> --only app\n' "$INIT_DIR" >&2
+        ;;
+      app)
+        APP_DIR=$(cd -- "$INIT_DIR" && pwd)
+        printf 'Wrote %s. Next, in %s:\n\n' "$INIT_DIR" "$PROJECT_ROOT" >&2
+        printf '  npm install\n' >&2
+        printf '  npm start -- --prefix %s\n' "${APP_DIR#"$PROJECT_ROOT"/}" >&2
+        ;;
+      *)
+        printf 'Wrote %s. Next:\n\n' "$INIT_DIR" >&2
+        printf '  cd %s\n' "$INIT_DIR" >&2
+        printf '  npm install\n' >&2
+        printf '  npm start\n' >&2
+        ;;
+    esac
+    exit 0
+    ;;
+  serve | build)
+    APP_DIR=$(cd -- "${PREFIX:-.}" && pwd)
+    WEBPACK_CONFIG=$(pick_file "$APP_DIR/webpack.config.js" "$VB_DIR/src/webpack.config.js")
+
+    # webpack.config.js reads them
+    VB_POSTCSS_CONFIG=$(pick_file "$APP_DIR/postcss.config.js" "$VB_DIR/src/postcss.config.js")
+    VB_SWC_CONFIG=$(pick_file "$APP_DIR/.swcrc" "$VB_DIR/src/.swcrc")
+    export VB_POSTCSS_CONFIG VB_SWC_CONFIG
+
+    print_summary "$APP_DIR" "$WEBPACK_CONFIG" "$VB_POSTCSS_CONFIG" "$VB_SWC_CONFIG"
+
+    # Without a mode, Webpack takes `production`, also for `serve`. A --mode in
+    # "$@" comes later, so it wins
+    if [ "$COMMAND" = "build" ]; then
+      run_webpack build "$APP_DIR" "$WEBPACK_CONFIG" --mode production "$@"
+    else
+      run_webpack serve "$APP_DIR" "$WEBPACK_CONFIG" --mode development "$@"
+    fi
+    exit 0
+    ;;
+  eject)
+    cat -- "$VB_DIR/src/$EJECT_CONFIG"
+    exit 0
     ;;
 esac
