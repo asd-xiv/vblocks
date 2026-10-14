@@ -17,6 +17,8 @@
 # ---
 # npx vblocks init my-app                         # Create a project in ./my-app
 # npx vblocks init my-flow --template xyflow      # Create a project with a specific template
+# npx vblocks init demos --only plumbing          # Create a project for several apps
+# npx vblocks init demos/one --only app           # Add an app to it
 # npx vblocks build                               # Build for production
 # npx vblocks build --prefix one                  # Build the app in ./one
 # npx vblocks serve                               # Start dev server
@@ -26,6 +28,9 @@
 # Directory where this script is located and
 # default configuration file paths (from this package).
 export VB_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
+
+# The hooks of a template read it
+export VB_VERSION="$(node -p "require('$VB_DIR/package.json').version")"
 
 # `serve` and `build` take `--prefix <directory>`, the app folder. Take it out
 # of the arguments, Webpack gets the rest
@@ -109,12 +114,14 @@ list_templates() {
   done
 }
 
-# Copy `template/_common`, then one template over it, into a directory that
-# is missing or empty
+# Copy the parts of a template into a directory that is missing or empty: the
+# `plumbing` of the project root, the `app`, or both. After each part, run its
+# hooks in the directory
 init_project() {
-  init_usage="Usage: vblocks init <directory> [--template <name>]"
+  init_usage="Usage: vblocks init <directory> [--template <name>] [--only <app|plumbing>]"
   init_dir=""
   init_template="plain"
+  init_parts="plumbing app"
 
   while [ "$#" -gt 0 ]; do
     case "$1" in
@@ -124,6 +131,20 @@ init_project() {
           exit 1
         fi
         init_template=$2
+        shift 2
+        ;;
+      --only)
+        if [ "$#" -lt 2 ]; then
+          echo "$init_usage" >&2
+          exit 1
+        fi
+        case "$2" in
+          app | plumbing) init_parts=$2 ;;
+          *)
+            echo "$init_usage" >&2
+            exit 1
+            ;;
+        esac
         shift 2
         ;;
       -*)
@@ -159,30 +180,62 @@ init_project() {
   fi
 
   mkdir -p -- "$init_dir" || exit 1
-  cp -R -- "$VB_DIR/template/_common/." "$init_dir" || exit 1
-  cp -R -- "$VB_DIR/template/$init_template/." "$init_dir" || exit 1
+  init_app=$(cd -- "$init_dir" && pwd) || exit 1
 
-  # npm leaves every `.gitignore` out of the package, so the template ships
-  # `_gitignore`
-  mv -- "$init_dir/_gitignore" "$init_dir/.gitignore" || exit 1
+  # An app joins a project, the nearest folder above with a package.json. The
+  # app hooks write that package.json
+  if [ "$init_parts" = "app" ]; then
+    init_root=$(dirname "$init_app")
+    until [ -f "$init_root/package.json" ]; do
+      if [ "$init_root" = "/" ]; then
+        printf 'No package.json above %s. Create the project first:\n\n' "$init_dir" >&2
+        printf '  npx @asd14/vblocks init <directory> --only plumbing\n' >&2
+        exit 1
+      fi
+      init_root=$(dirname "$init_root")
+    done
+  fi
 
-  init_name=$(basename "$(realpath "$init_dir")")
-  init_version=$(node -p "require('$VB_DIR/package.json').version")
+  for init_part in $init_parts; do
+    # A template's file replaces the `_common` file of the same path
+    for init_source in "$VB_DIR/template/_common" "$VB_DIR/template/$init_template"; do
+      if [ -d "$init_source/$init_part" ]; then
+        cp -R -- "$init_source/$init_part/." "$init_dir" || exit 1
+      fi
+    done
 
-  (
-    cd -- "$init_dir" \
-      && npm pkg set "name=$init_name" \
-        "devDependencies.@asd14/vblocks=^$init_version"
-  ) || exit 1
+    for init_source in "$VB_DIR/template/_common" "$VB_DIR/template/$init_template"; do
+      init_hook="$init_source/post-init-$init_part.sh"
+      [ -f "$init_hook" ] || continue
 
-  printf 'Created %s. Next:\n\n' "$init_name"
-  printf '  cd %s\n' "$init_dir"
-  printf '  npm install\n'
-  printf '  npm start\n'
+      if ! (cd -- "$init_dir" && sh "$init_hook"); then
+        printf 'Hook %s failed\n' "$init_hook" >&2
+        exit 1
+      fi
+    done
+  done
+
+  case "$init_parts" in
+    plumbing)
+      printf 'Created %s. Add an app:\n\n' "$init_dir"
+      printf '  npx @asd14/vblocks init %s/<app> --only app\n' "$init_dir"
+      ;;
+    app)
+      printf 'Created %s. Next, in %s:\n\n' "$init_dir" "$init_root"
+      printf '  npm install\n'
+      printf '  npm start -- --prefix %s\n' "${init_app#"$init_root"/}"
+      ;;
+    *)
+      printf 'Created %s. Next:\n\n' "$init_dir"
+      printf '  cd %s\n' "$init_dir"
+      printf '  npm install\n'
+      printf '  npm start\n'
+      ;;
+  esac
 }
 
 print_hero() {
-  version=$(node -p "require('$VB_DIR/package.json').version")
+  version=$VB_VERSION
   bold='\033[1m'
   green='\033[32m'
   blue='\033[34m'

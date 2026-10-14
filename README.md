@@ -16,6 +16,7 @@
 - [Installation](#installation)
   - [Peer Dependencies](#peer-dependencies)
 - [Quick Start](#quick-start)
+  - [Several apps in one project](#several-apps-in-one-project)
 - [Configuration](#configuration)
 - [Commands](#commands)
   - [`vblocks init`](#vblocks-init)
@@ -89,6 +90,29 @@ npx vblocks build
 npx vblocks eject webpack > webpack.config.js
 ```
 
+### Several apps in one project
+
+Several apps, eg. demos, can share one `package.json` and one `node_modules`.
+Add the project once, then each app in its own app folder:
+
+```sh
+npx @asd14/vblocks init demos --only plumbing
+npx @asd14/vblocks init demos/flow --template xyflow --only app
+cd demos
+npm install
+npm start -- --prefix flow
+```
+
+```text
+demos/
+├── flow/
+│   ├── src/
+│   ├── postcss.config.js
+│   └── tsconfig.json
+├── .gitignore
+└── package.json      # The dependencies of every app
+```
+
 ## Configuration
 
 A config in your app folder replaces the default of the same name. The app
@@ -118,11 +142,17 @@ npx vblocks eject postcss > postcss.config.js
 
 ### `vblocks init`
 
-Creates a project in `<directory>` from a template.
-
 ```text
-vblocks init <directory> [--template <plain|xyflow>]
+vblocks init <directory> [--template <name>] [--only <app|plumbing>]
 ```
+
+Writes a template's project files, app files, or both into `<directory>`.
+
+| Parameter                | Required | Default | Description                                                                                                                                                                                                                                         |
+| ------------------------ | -------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `<directory>`            | yes      | none    | The folder to write into. It must be missing or empty                                                                                                                                                                                               |
+| `--template <name>`      | no       | `plain` | `plain`, or `xyflow` with React Flow and Tailwind                                                                                                                                                                                                   |
+| `--only <app\|plumbing>` | no       | both    | `plumbing` writes the project files: `package.json`, `.gitignore`. `app` writes the app files: `src/`, `tsconfig.json` and the template's configs. With `app`, the template adds its dependencies to the nearest `package.json` above `<directory>` |
 
 **Example**:
 

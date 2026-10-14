@@ -13,6 +13,10 @@ set -eu
 #   then `vblocks build` and `vblocks build --env single` there. A template is
 #   a folder whose name has no `_` prefix.
 #
+#   Then runs `vblocks init --only plumbing` into `tmp/_apps`, adds one app per
+#   template with `--only app`, and builds each from `tmp/_apps` with
+#   `--prefix`.
+#
 #   Installs nothing. Each project resolves its dependencies from the
 #   `node_modules` of this repo, so a dependency of a template must also be a
 #   `devDependencies` entry here.
@@ -26,7 +30,7 @@ set -eu
 # EXIT CODES
 #   0   Every template built
 #   2   Invalid usage
-#   3   A template did not scaffold or build
+#   3   A template or an app did not scaffold or build
 #
 # SEE ALSO
 #   bin/vblocks.sh
@@ -55,6 +59,29 @@ build_template() {
   )
 }
 
+# build_apps <name>...
+#
+# Scaffold the plumbing into `tmp/_apps` and one app per template <name> inside
+# it, then build each app from `tmp/_apps`.
+build_apps() {
+  apps_dir="$OUT_DIR/_apps"
+
+  rm -rf -- "$apps_dir"
+  "$VBLOCKS_SCRIPT" init "$apps_dir" --only plumbing || return 1
+
+  for apps_template in "$@"; do
+    "$VBLOCKS_SCRIPT" init "$apps_dir/$apps_template" \
+      --template "$apps_template" --only app || return 1
+  done
+
+  (
+    cd -- "$apps_dir" || exit 1
+    for apps_template in "$@"; do
+      "$VBLOCKS_SCRIPT" build --prefix "$apps_template" --env single || exit 1
+    done
+  )
+}
+
 # ╭───
 # │ Bootstrap
 # ╰───
@@ -75,6 +102,7 @@ esac
 # │ Main
 # ╰───
 
+TEMPLATES=""
 for TEMPLATE_DIR in "$ROOT_DIR"/template/*/; do
   [ -d "$TEMPLATE_DIR" ] || continue
   TEMPLATE=$(basename "$TEMPLATE_DIR")
@@ -87,6 +115,14 @@ for TEMPLATE_DIR in "$ROOT_DIR"/template/*/; do
     printf 'Template "%s" did not scaffold or build\n' "$TEMPLATE" >&2
     exit 3
   fi
+
+  TEMPLATES="$TEMPLATES $TEMPLATE"
 done
+
+# shellcheck disable=SC2086 # one template name per word
+if ! build_apps $TEMPLATES; then
+  printf 'The apps of "%s" did not scaffold or build\n' "$OUT_DIR/_apps" >&2
+  exit 3
+fi
 
 exit 0
