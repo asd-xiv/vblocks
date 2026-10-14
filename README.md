@@ -5,19 +5,17 @@
 
 > 📜 POSIX + 📦 Webpack, an unlikely story!
 
-## Features
+- **Minimal configs** - Needs only `src/index.tsx` and `src/index.html`
+- **Built in** - SWC, PostCSS (CSS Modules configured), MDX, React Refresh,
+  Dotenv, bundle analyzer
 
-- **No configs** - All you need are `src/index.tsx` and `src/index.html`
-- **Built in** - SWC for TypeScript, PostCSS, CSS Modules, MDX, React Refresh,
-  bundle analyzer
+## Table of contents
 
 <!-- vim-markdown-toc GFM -->
 
 - [Installation](#installation)
   - [Peer Dependencies](#peer-dependencies)
-- [Usage](#usage)
-  - [Quick Start](#quick-start)
-  - [Project Structure](#project-structure)
+- [Quick Start](#quick-start)
 - [Configuration](#configuration)
 - [Commands](#commands)
   - [`vblocks init`](#vblocks-init)
@@ -56,17 +54,26 @@ npm install react react-dom
 > [!IMPORTANT]  
 > VBlocks needs React `^18` or `^19`.
 
-## Usage
-
-### Quick Start
+## Quick Start
 
 Create a project and start the dev server:
 
 ```sh
-npx @asd14/vblocks init my-app
-cd my-app
+npx @asd14/vblocks init my-vblocks-app
+cd my-vblocks-app
 npm install
 npm start
+```
+
+```text
+my-vblocks-app/
+├── src/
+│   ├── index.tsx     # Application entry point
+│   ├── index.html    # HTML template
+│   └── index.css     # Global CSS
+├── .gitignore        # Minimal set
+├── tsconfig.json     # TypeScript config for React
+└── package.json      # Scripts and dependencies (react, react-dom)
 ```
 
 Run a command in a project that has VBlocks installed:
@@ -78,23 +85,8 @@ npx vblocks serve
 # Build for production
 npx vblocks build
 
-# Print the default Webpack config
-npx vblocks eject webpack
-```
-
-### Project Structure
-
-```text
-your-project/
-├── src/
-│   ├── index.tsx          # Application entry point
-│   ├── index.html         # HTML template
-│   ├── index.css          # Global CSS (optional)
-│   └── public/
-│       ├── favicon.svg    # Favicon (optional)
-│       └── robots.txt     # Crawler instructions (optional)
-├── .env                   # Environment variables (optional)
-└── dist/                  # Build output
+# Save the default Webpack config in your project root
+npx vblocks eject webpack > webpack.config.js
 ```
 
 ## Configuration
@@ -115,7 +107,7 @@ npx vblocks eject postcss > postcss.config.js
 > [!NOTE]  
 > VBlocks does not merge your config with the default, with two exceptions:
 >
-> - `.swcrc -> env.targets`: VBlocks adds the default when yours has none
+> - `.swcrc -> env.targets`: VBlocks adds the default when yours is missing
 > - `.swcrc -> jsc.transform.react.refresh`: VBlocks adds the React Refresh
 >   transform when `serve` runs in `development` mode
 
@@ -123,75 +115,40 @@ npx vblocks eject postcss > postcss.config.js
 
 ### `vblocks init`
 
-```text
-vblocks init <directory> [--template <name>]
-```
-
 Creates a project in `<directory>` from a template.
 
-| Parameter           | Required | Default | Description                                                                                      |
-| ------------------- | -------- | ------- | ------------------------------------------------------------------------------------------------ |
-| `<directory>`       | yes      | none    | The project root. `init` creates it when it is missing and fails when it exists and is not empty |
-| `--template <name>` | no       | `plain` | The template to copy: `plain` or `xyflow-playground`                                             |
-
-| Template            | `src/index.tsx`                                   | `dependencies`                                                 | Tailwind                                                                                                      |
-| ------------------- | ------------------------------------------------- | -------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `plain`             | Hello World!                                      | `react`, `react-dom`                                           | no                                                                                                            |
-| `xyflow-playground` | Renders a graph of nodes you can drag and connect | `react`, `react-dom`, [`@xyflow/react`](https://reactflow.dev) | yes, `package.json`, `postcss.config.js` and `src/index.css` hold [the setup](#does-vblocks-support-tailwind) |
-
-`init` writes:
-
 ```text
-<directory>/
-├── src/
-│   ├── index.tsx      # Application entry point
-│   ├── index.html     # HTML template
-│   └── index.css      # Global CSS
-├── .gitignore         # node_modules, dist, .env
-├── package.json
-├── postcss.config.js  # Only in xyflow-playground
-└── tsconfig.json
+vblocks init <directory> [--template <plain|xyflow>]
 ```
 
-Run `init` through `npx @asd14/vblocks`. `init` installs no dependencies, so
-install them next:
+**Example**:
 
 ```sh
-npx @asd14/vblocks init my-flow --template xyflow-playground
-cd my-flow
+npx @asd14/vblocks init my-vblock-flow --template xyflow
+cd my-vblock-flow
 npm install
 ```
 
 ### `vblocks serve`
 
+Starts a React Refresh enabled development server.
+
+- Runs at `http://localhost:8080`, auto-opens in browser
+- Runs bundle analyzer at `http://127.0.0.1:8888`
+
 ```text
-vblocks serve [--mode <mode>] [<webpack option>...]
+vblocks serve [--mode <development|production>] [<webpack option>...]
 ```
 
-Starts the dev server. Without `--port`, it listens on `http://localhost:8080`.
-
-| Parameter          | Required | Default       | Description                                                                                                                                                    |
-| ------------------ | -------- | ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `--mode <mode>`    | no       | `development` | The Webpack mode, `development` or `production`. React Refresh runs only in `development`                                                                      |
-| `<webpack option>` | no       | none          | Any other [`webpack serve`](https://webpack.js.org/configuration/dev-server/) option, eg. `--port 3000` or `--no-open`. VBlocks passes it to Webpack unchanged |
-
-The dev server:
-
-- Replaces changed modules without a page reload, with Hot Module Replacement
-  and React Refresh
-- Opens the browser
-- Runs the bundle analyzer at `http://127.0.0.1:8888`. VBlocks does not open it
-  in the browser
-- Serves `index.html` for every unknown path, for applications that use the
-  History API
-
-**Runs**:
+**Example**:
 
 ```sh
-npx webpack serve --config <webpack config> \
-  --env entryDir=<project root> \
-  --mode development \
-  [...your arguments]
+cd my-vblock-flow
+vblocks serve
+#         ↓
+# npx webpack serve --config <webpack config> \
+#   --env entryDir=<project root> \
+#   --mode development
 ```
 
 ### `vblocks build`
@@ -416,8 +373,7 @@ npx vblocks eject postcss > postcss.config.js
 @import "tailwindcss";
 ```
 
-The `xyflow-playground` template of [`vblocks init`](#vblocks-init) has this
-setup.
+The `xyflow` template of [`vblocks init`](#vblocks-init) has this setup.
 
 ## License
 
