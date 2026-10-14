@@ -22,7 +22,7 @@
   - [`vblocks serve`](#vblocks-serve)
   - [`vblocks build`](#vblocks-build)
   - [`vblocks eject`](#vblocks-eject)
-- [Features in Detail](#features-in-detail)
+- [Details](#details)
   - [TypeScript](#typescript)
   - [PostCSS](#postcss)
   - [CSS Modules Support](#css-modules-support)
@@ -91,13 +91,16 @@ npx vblocks eject webpack > webpack.config.js
 
 ## Configuration
 
-A config in your project root replaces the default of the same name.
+A config in your app folder replaces the default of the same name. The app
+folder holds `src/`. It is the folder passed to [`--prefix`](#vblocks-build), or
+the current folder without it. In a single-app project, the app folder is also
+the project root, the folder with `package.json`.
 
 - `webpack.config.js`
 - `postcss.config.js`
 - `.swcrc`
 
-To replace a default, first [`eject`](#vblocks-eject) it into your project root,
+To replace a default, first [`eject`](#vblocks-eject) it into your app folder,
 then edit the file:
 
 ```sh
@@ -137,33 +140,40 @@ Starts a React Refresh enabled development server.
 - Runs bundle analyzer at `http://127.0.0.1:8888`
 
 ```text
-vblocks serve [--mode <development|production>] [<webpack option>...]
+vblocks serve [--mode <mode>] [--prefix <directory>] [<webpack option>...]
 ```
+
+| Parameter              | Required | Default            | Description                                                                                                 |
+| ---------------------- | -------- | ------------------ | ----------------------------------------------------------------------------------------------------------- |
+| `--mode <mode>`        | no       | `development`      | The Webpack mode, `development` or `production`                                                             |
+| `--prefix <directory>` | no       | the current folder | The [app folder](#configuration), relative to the current folder                                            |
+| `<webpack option>`     | no       | none               | Any other [`webpack serve`](https://webpack.js.org/api/cli/) option. VBlocks passes it to Webpack unchanged |
 
 **Example**:
 
 ```sh
 cd my-vblock-flow
 vblocks serve
-#         ↓
+#        ↓↓↓
 # npx webpack serve --config <webpack config> \
-#   --env entryDir=<project root> \
+#   --env entryDir=<app folder> \
 #   --mode development
 ```
 
 ### `vblocks build`
 
 ```text
-vblocks build [--mode <mode>] [--env single] [<webpack option>...]
+vblocks build [--mode <mode>] [--env single] [--prefix <directory>] [<webpack option>...]
 ```
 
-Builds the project into `dist/`.
+Builds the app into `dist/` in the app folder.
 
-| Parameter          | Required | Default      | Description                                                                                                                            |
-| ------------------ | -------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
-| `--mode <mode>`    | no       | `production` | The Webpack mode, `development` or `production`. The build minifies JS, CSS and HTML only in `production`                              |
-| `--env single`     | no       | off          | Build one standalone `dist/index.html`                                                                                                 |
-| `<webpack option>` | no       | none         | Any other [`webpack build`](https://webpack.js.org/api/cli/) option, eg. `--stats errors-only`. VBlocks passes it to Webpack unchanged |
+| Parameter              | Required | Default            | Description                                                                                                                            |
+| ---------------------- | -------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `--mode <mode>`        | no       | `production`       | The Webpack mode, `development` or `production`. The build minifies JS, CSS and HTML only in `production`                              |
+| `--env single`         | no       | off                | Build one standalone `dist/index.html`                                                                                                 |
+| `--prefix <directory>` | no       | the current folder | The [app folder](#configuration), relative to the current folder                                                                       |
+| `<webpack option>`     | no       | none               | Any other [`webpack build`](https://webpack.js.org/api/cli/) option, eg. `--stats errors-only`. VBlocks passes it to Webpack unchanged |
 
 Without `--env single`, the build:
 
@@ -182,7 +192,7 @@ With `--env single`:
 
 ```sh
 npx webpack build --config <webpack config> \
-  --env entryDir=<project root> \
+  --env entryDir=<app folder> \
   --mode production \
   [...your arguments]
 ```
@@ -199,7 +209,7 @@ Prints a default config to stdout.
 | ---------- | -------- | ------- | -------------------------------------------------- |
 | `<config>` | yes      | none    | The config to print: `webpack`, `postcss` or `swc` |
 
-Save the output in your project root to [replace the default](#configuration):
+Save the output in your app folder to [replace the default](#configuration):
 
 ```sh
 npx vblocks eject webpack > webpack.config.js
@@ -207,7 +217,7 @@ npx vblocks eject postcss > postcss.config.js
 npx vblocks eject swc > .swcrc
 ```
 
-## Features in Detail
+## Details
 
 ### TypeScript
 
@@ -264,8 +274,9 @@ export default ({ mode }) => ({
 })
 ```
 
-`postcss-preset-env` compiles nesting, `oklch()` and `color-mix()` for older
-browsers and adds vendor prefixes.
+> [!NOTE]  
+> `postcss-preset-env` compiles nesting, `oklch()` and `color-mix()` for older
+> browsers and adds vendor prefixes.
 
 ### CSS Modules Support
 
@@ -286,7 +297,7 @@ browsers and adds vendor prefixes.
 
 ### Environment Variables
 
-VBlocks loads the `.env` file in your project root:
+VBlocks loads the `.env` file in your app folder:
 
 ```env
 API_URL=https://api.example.com
@@ -329,7 +340,7 @@ Webpack config reads them.
 ### Does VBlocks support Tailwind?
 
 Yes, VBlocks supports Tailwind but does not include it, so you need a
-`postcss.config.js` in your project root.
+`postcss.config.js` in your app folder.
 
 1. Install Tailwind and the Tailwind plugin for PostCSS:
 
@@ -337,7 +348,7 @@ Yes, VBlocks supports Tailwind but does not include it, so you need a
 npm install --save-dev tailwindcss @tailwindcss/postcss
 ```
 
-2. Eject the default PostCSS config into your project root:
+2. Eject the default PostCSS config into your app folder:
 
 ```sh
 npx vblocks eject postcss > postcss.config.js
@@ -370,8 +381,13 @@ npx vblocks eject postcss > postcss.config.js
 4. Add this import to `src/index.css`:
 
 ```css
-@import "tailwindcss";
+@import "tailwindcss" source(".");
 ```
+
+`source(".")` limits Tailwind's class scan to the folder of the CSS file,
+`src/`. Without it, Tailwind scans the folder Webpack runs in. With
+[`--prefix`](#vblocks-build), Webpack runs in the project root, which holds
+every app. Each app's CSS then also gets the classes of the other apps.
 
 The `xyflow` template of [`vblocks init`](#vblocks-init) has this setup.
 

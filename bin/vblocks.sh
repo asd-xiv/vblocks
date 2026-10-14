@@ -18,6 +18,7 @@
 # npx vblocks init my-app                         # Create a project in ./my-app
 # npx vblocks init my-flow --template xyflow      # Create a project with a specific template
 # npx vblocks build                               # Build for production
+# npx vblocks build --prefix one                  # Build the app in ./one
 # npx vblocks serve                               # Start dev server
 # npx vblocks eject webpack > webpack.config.js   # Customize a config
 # =============================================================================
@@ -26,9 +27,39 @@
 # default configuration file paths (from this package).
 export VB_DIR="$(dirname "$(dirname "$(realpath "$0")")")"
 
-# Project directory (where you run the command from) and
-# project-specific config file paths.
-export PROJECT_DIR="$(pwd)"
+# `serve` and `build` take `--prefix <directory>`, the app folder. Take it out
+# of the arguments, Webpack gets the rest
+PREFIX=""
+case "${1:-}" in
+  serve | build)
+    prefix_count=$#
+    while [ "$prefix_count" -gt 0 ]; do
+      prefix_arg=$1
+      shift
+      prefix_count=$((prefix_count - 1))
+
+      if [ "$prefix_arg" = "--prefix" ]; then
+        if [ "$prefix_count" -eq 0 ]; then
+          echo "--prefix needs a directory" >&2
+          exit 1
+        fi
+        PREFIX=$1
+        shift
+        prefix_count=$((prefix_count - 1))
+      else
+        set -- "$@" "$prefix_arg"
+      fi
+    done
+    ;;
+esac
+
+if [ -n "$PREFIX" ] && [ ! -d "$PREFIX" ]; then
+  printf '%s is not a directory\n' "$PREFIX" >&2
+  exit 1
+fi
+
+# App directory: the --prefix folder, or where you run the command from
+export PROJECT_DIR="$(cd -- "${PREFIX:-.}" && pwd)"
 
 # Choose between project-specific and default configs. Project files take precedence.
 select_config() {
