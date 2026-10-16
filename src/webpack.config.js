@@ -149,7 +149,18 @@ const inlineAssets = compiler => {
  * @property {string} faviconPath - Path to favicon.ico copied to the output directory
  * @property {boolean} [single] - Build one standalone index.html, every asset inlined
  * @property {boolean} [analyze] - Run the bundle analyzer next to the dev server
+ * @property {"error"|"warn"|"info"|"verbose"} [logLevel] - How much Webpack and its dev server print
  */
+
+/**
+ * The stats preset of Webpack for each log level of VBlocks
+ */
+const STATS_BY_LOG_LEVEL = /** @type {const} */ ({
+  error: "errors-only",
+  warn: "errors-warnings",
+  info: "normal",
+  verbose: "verbose",
+})
 
 /**
  * @typedef {Object} VBlocksProps
@@ -163,7 +174,7 @@ const inlineAssets = compiler => {
  * @returns {WebpackConfiguration}
  */
 export default (
-  { entryDir, robotsPath, faviconPath, single, analyze },
+  { entryDir, robotsPath, faviconPath, single, analyze, logLevel = "warn" },
   { mode }
 ) => {
   const isProduction = mode === "production"
@@ -195,8 +206,9 @@ export default (
 
     mode: mode,
 
-    // Keep the summary of VBlocks on screen, `--stats` overrides it
-    stats: "errors-warnings",
+    // Keep the summary of VBlocks on screen. `--log-level` sets it, `--stats`
+    // overrides it
+    stats: STATS_BY_LOG_LEVEL[logLevel],
 
     output: {
       // A standalone file opens from disk, where "/" is the filesystem root
@@ -372,9 +384,9 @@ export default (
         }
       : undefined,
 
-    // Hide the info lines of the dev server, and of the client in the browser
-    // console. Warnings and errors still print
-    infrastructureLogging: { level: "warn" },
+    // At warn, hide the info lines of the dev server, and of the client in the
+    // browser console
+    infrastructureLogging: { level: logLevel },
 
     plugins: [
       new HtmlWebPackPlugin({

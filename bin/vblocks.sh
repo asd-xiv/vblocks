@@ -8,9 +8,9 @@ set -eu
 # SYNOPSIS
 #   vblocks init <directory> [--template <name>] [--only <app|plumbing>]
 #   vblocks serve [--mode <mode>] [--prefix <directory>] [--analyze]
-#                 [<webpack option>...]
+#                 [--log-level <level>] [<webpack option>...]
 #   vblocks build [--mode <mode>] [--prefix <directory>] [--single-file]
-#                 [<webpack option>...]
+#                 [--log-level <level>] [<webpack option>...]
 #   vblocks eject <webpack|postcss|swc>
 #   vblocks -h | --help
 #
@@ -45,6 +45,9 @@ set -eu
 #   --single-file           build: one standalone dist/index.html, every
 #                           asset inlined
 #   --analyze               serve: run the bundle analyzer, on a free port
+#   --log-level <level>     serve, build: how much Webpack, its dev server and
+#                           npm print: error, warn, info or verbose (default:
+#                           warn)
 #   -h, --help              Print this help
 #
 # ENVIRONMENT
@@ -83,6 +86,7 @@ INIT_DIR=""          # init <directory>
 TEMPLATE="plain"     # init --template
 PARTS="plumbing app" # init --only, "plumbing" or "app"
 PREFIX=""            # serve/build --prefix, the app folder
+LOG_LEVEL="warn"     # serve/build --log-level, error, warn, info or verbose
 EJECT_CONFIG=""      # eject <config>
 
 # ╭───
@@ -377,10 +381,17 @@ run_webpack() {
   webpack_favicon_file=$(pick_file \
     "$webpack_app_dir/src/public/favicon.svg" "$VB_DIR/src/public/favicon.svg")
 
+  # npm echoes every npx call at notice, the level between warn and info
+  case "$LOG_LEVEL" in
+    info) webpack_npm_level="notice" ;;
+    *) webpack_npm_level=$LOG_LEVEL ;;
+  esac
+
   webpack_status=0
-  # npm echoes every npx call at its default level, notice
-  npx --loglevel=warn webpack "$webpack_action" --config "$webpack_config" \
+  npx --loglevel="$webpack_npm_level" webpack "$webpack_action" \
+    --config "$webpack_config" \
     --env "entryDir=$webpack_app_dir" \
+    --env "logLevel=$LOG_LEVEL" \
     --env "robotsPath=$webpack_robots_file" \
     --env "faviconPath=$webpack_favicon_file" \
     "$@" || webpack_status=$?
@@ -492,6 +503,15 @@ case "$COMMAND" in
         --prefix)
           [ "$ARG_COUNT" -eq 0 ] && fail 2 "--prefix needs a folder"
           PREFIX=$1
+          shift
+          ARG_COUNT=$((ARG_COUNT - 1))
+          ;;
+        --log-level)
+          [ "$ARG_COUNT" -eq 0 ] && fail 2 "--log-level needs a level"
+          case "$1" in
+            error | warn | info | verbose) LOG_LEVEL=$1 ;;
+            *) fail 2 "Unknown level \"$1\", use error, warn, info or verbose" ;;
+          esac
           shift
           ARG_COUNT=$((ARG_COUNT - 1))
           ;;

@@ -415,7 +415,7 @@ Start the development server.
 - Opens the page in the browser
 
 ```text
-vblocks serve [--mode <mode>] [--prefix <directory>] [--analyze] [<webpack option>...]
+vblocks serve [--mode <mode>] [--prefix <directory>] [--analyze] [--log-level <level>] [<webpack option>...]
 ```
 
 - `--mode <mode>`\
@@ -425,6 +425,9 @@ vblocks serve [--mode <mode>] [--prefix <directory>] [--analyze] [<webpack optio
   The [app folder](#vocabulary), which must exist (default: the current folder)
 - `--analyze`\
   Run the bundle analyzer, on a free port
+- `--log-level <level>`\
+  How much Webpack, its dev server and npm print: `error`, `warn`, `info` or
+  `verbose` (default: `warn`)
 - `<webpack option>`\
   Any other [`webpack serve`](https://webpack.js.org/api/cli/) option. VBlocks
   passes it to Webpack unchanged
@@ -451,7 +454,7 @@ build:
   total over 20 KB (10 KB in `development`)
 
 ```text
-vblocks build [--mode <mode>] [--prefix <directory>] [--single-file] [<webpack option>...]
+vblocks build [--mode <mode>] [--prefix <directory>] [--single-file] [--log-level <level>] [<webpack option>...]
 ```
 
 - `--mode <mode>`\
@@ -466,6 +469,9 @@ vblocks build [--mode <mode>] [--prefix <directory>] [--single-file] [<webpack o
   - The build leaves `robots.txt` out
   - Keep the route in the URL hash. On `file://`, `history.pushState` to another
     path throws
+- `--log-level <level>`\
+  How much Webpack, its dev server and npm print: `error`, `warn`, `info` or
+  `verbose` (default: `warn`)
 - `<webpack option>`\
   Any other [`webpack build`](https://webpack.js.org/api/cli/) option, eg.
   `--stats errors-only`. VBlocks passes it to Webpack unchanged
