@@ -148,6 +148,7 @@ const inlineAssets = compiler => {
  * @property {string} robotsPath - Path to robots.txt copied to the output directory
  * @property {string} faviconPath - Path to favicon.ico copied to the output directory
  * @property {boolean} [single] - Build one standalone index.html, every asset inlined
+ * @property {boolean} [analyze] - Run the bundle analyzer next to the dev server
  */
 
 /**
@@ -161,10 +162,14 @@ const inlineAssets = compiler => {
  * @param {VBlocksProps} props
  * @returns {WebpackConfiguration}
  */
-export default ({ entryDir, robotsPath, faviconPath, single }, { mode }) => {
+export default (
+  { entryDir, robotsPath, faviconPath, single, analyze },
+  { mode }
+) => {
   const isProduction = mode === "production"
   const isServe = process.argv[2] == "serve"
   const isSingle = Boolean(single) && !isServe
+  const isAnalyze = Boolean(analyze) && isServe
   const hasReactRefresh = isServe && mode === "development"
   const swcConfig = loadSwcConfig({ hasReactRefresh })
   const commonPostCSSConfigs = createCssModuleConfig(isProduction)
@@ -374,9 +379,11 @@ export default ({ entryDir, robotsPath, faviconPath, single }, { mode }) => {
 
       isSingle && inlineAssets,
 
-      isServe &&
+      isAnalyze &&
         new BundleAnalyzerPlugin({
           openAnalyzer: false,
+          // Two dev servers would otherwise both take 8888
+          analyzerPort: "auto",
         }),
 
       hasReactRefresh && new ReactRefreshWebpackPlugin(),

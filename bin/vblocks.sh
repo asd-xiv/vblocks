@@ -7,7 +7,8 @@ set -eu
 #
 # SYNOPSIS
 #   vblocks init <directory> [--template <name>] [--only <app|plumbing>]
-#   vblocks serve [--mode <mode>] [--prefix <directory>] [<webpack option>...]
+#   vblocks serve [--mode <mode>] [--prefix <directory>] [--analyze]
+#                 [<webpack option>...]
 #   vblocks build [--mode <mode>] [--prefix <directory>] [--single-file]
 #                 [<webpack option>...]
 #   vblocks eject <webpack|postcss|swc>
@@ -41,6 +42,7 @@ set -eu
 #                           current folder)
 #   --single-file           build: one standalone dist/index.html, every
 #                           asset inlined
+#   --analyze               serve: run the bundle analyzer, on a free port
 #   -h, --help              Print this help
 #
 # ENVIRONMENT
@@ -387,6 +389,11 @@ case "$COMMAND" in
           [ "$COMMAND" = "build" ] || fail 2 "--single-file works only with build"
           # webpack.config.js reads env.single, an ejected one too
           set -- "$@" --env single
+          ;;
+        --analyze)
+          [ "$COMMAND" = "serve" ] || fail 2 "--analyze works only with serve"
+          # webpack.config.js reads env.analyze, an ejected one too
+          set -- "$@" --env analyze
           ;;
         *)
           set -- "$@" "$ARG"

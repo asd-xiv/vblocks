@@ -405,11 +405,11 @@ npm install
 
 Start the development server.
 
-- The server runs at `http://localhost:8080`. It opens the page in the browser
-- The bundle analyzer runs at `http://127.0.0.1:8888`
+- Runs at `http://localhost:8080`, or the next free port
+- Opens the page in the browser
 
 ```text
-vblocks serve [--mode <mode>] [--prefix <directory>] [<webpack option>...]
+vblocks serve [--mode <mode>] [--prefix <directory>] [--analyze] [<webpack option>...]
 ```
 
 - `--mode <mode>`\
@@ -417,6 +417,8 @@ vblocks serve [--mode <mode>] [--prefix <directory>] [<webpack option>...]
   React Refresh runs only in `development`
 - `--prefix <directory>`\
   The [app folder](#vocabulary), which must exist (default: the current folder)
+- `--analyze`\
+  Run the bundle analyzer, on a free port
 - `<webpack option>`\
   Any other [`webpack serve`](https://webpack.js.org/api/cli/) option. VBlocks
   passes it to Webpack unchanged
