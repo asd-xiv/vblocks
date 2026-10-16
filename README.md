@@ -14,7 +14,7 @@ everything set up.
 -->
 
 **🔋 Maximal support**  
-SWC, PostCSS (CSS Modules configured), MDX, React Refresh, Dotenv
+SWC, PostCSS, CSS Modules, MDX, React Refresh, Dotenv
 
 <!--
 PARKED until SSG is finished, then name both outputs: SPA and SSG.
@@ -24,12 +24,12 @@ Builds to `dist/`, for any static host
 -->
 
 **📦 Several apps, one install**  
-Apps share one `package.json` and `node_modules/`, a new app reuses the
+Apps share one `package.json` and `node_modules/`. A new app reuses the
 installed packages
 
 **🤖 Optimized for AI agents**  
-No config to write, so an agent spends its tokens on the content, not on the
-setup
+The agent's context holds only the app: no Webpack, PostCSS or TypeScript
+config to write, read or fix
 
 > [!IMPORTANT]  
 > VBlocks needs Node `^22.22.3`, `^24.15.0` or `>=26.0`.
@@ -74,7 +74,7 @@ tutorial, How to is how-to guides, Vocabulary and Commands are reference.
 ## Quick Start
 
 <!--
-Diátaxis: tutorial. The fewest steps to a working build. It shows enough of
+Diátaxis: tutorial. The fewest steps to a working bundle. It shows enough of
 VBlocks for the reader to decide whether VBlocks fits their project.
 -->
 
@@ -172,6 +172,7 @@ them.
 | **Project folder** | The folder with `package.json`                                |
 | **App folder**     | The folder with `src/index.tsx` and `src/index.html`          |
 | **Plumbing**       | The project files `init` writes: `package.json`, `.gitignore` |
+| **Bundle**         | The files `build` writes to `dist/`                           |
 
 ## How to
 
@@ -196,7 +197,7 @@ another reader, eg. one with an existing app, goes last.
    ```
 
 Webpack replaces each `process.env["NAME"]` with the value of `NAME`, and
-`undefined` when `.env` does not set it. The build leaves out every variable
+`undefined` when `.env` does not set it. The bundle leaves out every variable
 your code does not read.
 
 > [!WARNING]  
@@ -205,8 +206,7 @@ your code does not read.
 
 > [!NOTE]  
 > The [client types](src/types/client.d.ts) declare `process.env` and nothing
-> else from Node, because Webpack replaces nothing else. With the client types,
-> `tsc` fails on `process.cwd()` and `Buffer`.
+> else from Node, because Webpack replaces nothing else.
 
 ### Stop using `../../../` everywhere
 
@@ -219,8 +219,8 @@ import { Component } from "@self/components"
 
 > [!NOTE]  
 > VBlocks never reads your `tsconfig.json`, so `tsc` needs the alias too. The
-> one scaffolded by [`vblocks init`](#vblocks-init) already has it. Otherwise,
-> add:
+> `tsconfig.json` that [`vblocks init`](#vblocks-init) writes already has it.
+> Otherwise, add:
 >
 > ```json
 > {
@@ -250,14 +250,13 @@ import { Component } from "@self/components"
    export const Button = () => <button className={styles.primaryButton} />
    ```
 
-- **camelCase exports** - `.primary-button` becomes `styles.primaryButton`
+- **camelCase keys** - `.primary-button` becomes `styles.primaryButton`
 - **Class names** - a bare hash in `production` mode, `[local]__[hash]` in
   `development` mode
-- **Global CSS** - a file without `.module` stays global,
-  `import "./styles.css"`
 
 > [!NOTE]  
-> The [client types](src/types/client.d.ts) declare `.css` imports.
+> The [client types](src/types/client.d.ts) declare `.css` imports and other
+> common client specific extensions like `.png`, `.ttf` etc.
 
 ### Replace a default config
 
@@ -270,7 +269,7 @@ Each of these configs in your app folder replaces the default of the same name:
 1. **[Eject](#vblocks-eject) the default into your app folder**
 
    ```sh
-   npx vblocks eject postcss > flow-diagram/postcss.config.js
+   npx vblocks eject swc > flow-diagram/.swcrc
    ```
 
 2. **Update the ejected file**
@@ -283,8 +282,8 @@ Each of these configs in your app folder replaces the default of the same name:
 >   transform when `serve` runs in `development` mode
 
 > [!NOTE]  
-> [`build --single-file`](#vblocks-build) and
-> [`serve --analyze`](#vblocks-serve) reach your `webpack.config.js` as
+> VBlocks passes [`build --single-file`](#vblocks-build) and
+> [`serve --analyze`](#vblocks-serve) to your `webpack.config.js` as
 > `env.single` and `env.analyze`.
 
 ### Style with Tailwind
@@ -390,19 +389,21 @@ vblocks init <directory> [--template <name>] [--only <app|plumbing>]
   Write one part of the template (default: both)
   - `plumbing`: `package.json`, `.gitignore`
   - `app`: `src/`, `tsconfig.json` and the template's configs. `init` adds the
-    template's dependencies to the nearest `package.json` above `<directory>`.
-    Without one, `init` fails
+    template's dependencies to the `package.json` of the
+    [project folder](#vocabulary), the nearest folder above `<directory>` with a
+    `package.json`. Without that folder, `init` fails
 
 **Example**:
 
 <!--
-Using the `my-vblock-` prefix, so a reader who tries several scaffolders spots
-the folder at a glance, as with `vite-project` and `nuxt-app`.
+Using the `my-vblocks-` prefix, the package name, so a reader who tries several
+scaffolders spots the folder at a glance, as with `vite-project` and
+`nuxt-app`.
 -->
 
 ```sh
-npx @asd14/vblocks init my-vblock-flow --template xyflow
-cd my-vblock-flow
+npx @asd14/vblocks init my-vblocks-flow --template xyflow
+cd my-vblocks-flow
 npm install
 ```
 
@@ -411,7 +412,7 @@ npm install
 Start the development server.
 
 - Runs at `http://localhost:8080`, or the next free port
-- Listens on this machine only, `--host 0.0.0.0` exposes it to the network
+- Listens on this machine only. Pass `--host 0.0.0.0` to listen on the network
 - Opens the page in the browser
 
 ```text
@@ -426,8 +427,8 @@ vblocks serve [--mode <mode>] [--prefix <directory>] [--analyze] [--log-level <l
 - `--analyze`\
   Run the bundle analyzer, on a free port
 - `--log-level <level>`\
-  How much Webpack, its dev server and npm print: `error`, `warn`, `info` or
-  `verbose` (default: `warn`)
+  How much Webpack, its development server and npm print: `error`, `warn`,
+  `info` or `verbose` (default: `warn`)
 - `<webpack option>`\
   Any other [`webpack serve`](https://webpack.js.org/api/cli/) option. VBlocks
   passes it to Webpack unchanged
@@ -435,7 +436,7 @@ vblocks serve [--mode <mode>] [--prefix <directory>] [--analyze] [--log-level <l
 **Example**:
 
 ```sh
-cd my-vblock-flow
+cd my-vblocks-flow
 npx vblocks serve
 #        ↓↓↓
 # npx webpack serve --config <webpack config> \
@@ -446,8 +447,8 @@ npx vblocks serve
 
 ### `vblocks build`
 
-Build the app into `dist/` in the app folder. Without `--single-file`, the
-build:
+Build the app into a bundle in the `dist/` of the app folder. Without
+`--single-file`, `build`:
 
 - Writes JS and CSS files with content-hashed names
 - Writes a `react` chunk, and a `vendors` chunk when your other dependencies
@@ -459,19 +460,19 @@ vblocks build [--mode <mode>] [--prefix <directory>] [--single-file] [--log-leve
 
 - `--mode <mode>`\
   The Webpack mode, `development` or `production` (default: `production`). In
-  `production`, the build minifies JS and HTML, and cssnano, in the default
-  PostCSS config, minifies CSS
+  `production`, `build` minifies JS and HTML, and the default PostCSS config
+  runs cssnano, which minifies CSS
 - `--prefix <directory>`\
   The [app folder](#vocabulary), which must exist (default: the current folder)
 - `--single-file`\
-  The build writes one standalone `dist/index.html`, every asset inlined
+  `build` writes one standalone `dist/index.html`, every asset inlined
   - A browser opens the file from disk, with no server and no network
-  - The build leaves `robots.txt` out
+  - The bundle has no `robots.txt`
   - Keep the route in the URL hash. On `file://`, `history.pushState` to another
     path throws
 - `--log-level <level>`\
-  How much Webpack, its dev server and npm print: `error`, `warn`, `info` or
-  `verbose` (default: `warn`)
+  How much Webpack and npm print: `error`, `warn`, `info` or `verbose` (default:
+  `warn`)
 - `<webpack option>`\
   Any other [`webpack build`](https://webpack.js.org/api/cli/) option, eg.
   `--stats errors-only`. VBlocks passes it to Webpack unchanged
@@ -479,7 +480,7 @@ vblocks build [--mode <mode>] [--prefix <directory>] [--single-file] [--log-leve
 **Example**:
 
 ```sh
-cd my-vblock-flow
+cd my-vblocks-flow
 npx vblocks build
 #        ↓↓↓
 # npx webpack build --config <webpack config> \
