@@ -339,11 +339,28 @@ export default (
 
           // Tells dev-server to open the browser after server had been started.
           open: true,
+
+          // Print the URL once, as the result of serve. The startup lines of
+          // the dev server stay hidden, see infrastructureLogging
+          onListening: developmentServer => {
+            const address = developmentServer.server?.address()
+
+            // A TCP server gives an object, a pipe server gives a string
+            if (typeof address !== "object" || address === null) return
+
+            const { port } = address
+            process.stdout.write(`Local:   http://localhost:${port}\n`)
+          },
+
           client: {
             overlay: true,
           },
         }
       : undefined,
+
+    // Hide the info lines of the dev server, and of the client in the browser
+    // console. Warnings and errors still print
+    infrastructureLogging: { level: "warn" },
 
     plugins: [
       new HtmlWebPackPlugin({
