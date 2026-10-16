@@ -545,6 +545,10 @@ export default (
     performance: {
       // A standalone file is over the size limit by design
       hints: isProduction && !isSingle ? "warning" : false,
+      // React and react-dom alone are over the 244 KiB default. Vite warns
+      // at 500 kB
+      maxAssetSize: 500 * 1000,
+      maxEntrypointSize: 500 * 1000,
     },
   }
 }
