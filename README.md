@@ -28,8 +28,8 @@ Apps share one `package.json` and `node_modules/`. A new app reuses the
 installed packages
 
 **🤖 Optimized for AI agents**  
-The agent's context holds only the app: no Webpack, PostCSS or TypeScript
-config to write, read or fix
+The agent's context holds only the app: no Webpack, PostCSS or TypeScript config
+to write, read or fix
 
 > [!IMPORTANT]  
 > VBlocks needs Node `^22.22.3`, `^24.15.0` or `>=26.0`.
@@ -81,6 +81,12 @@ VBlocks for the reader to decide whether VBlocks fits their project.
 <!--
 Using "scaffold", the field's word for what `init` does, eg. Yeoman and
 create-vite use it.
+-->
+
+<!--
+Using the `my-vblocks-` prefix, the package name, so a reader who tries several
+scaffolders spots the folder at a glance, as with `vite-project` and
+`nuxt-app`.
 -->
 
 1. **Scaffold a minimal React project**
@@ -197,8 +203,8 @@ another reader, eg. one with an existing app, goes last.
    ```
 
 Webpack replaces each `process.env["NAME"]` with the value of `NAME`, and
-`undefined` when `.env` does not set it. The bundle leaves out every variable
-your code does not read.
+`undefined` when `.env` does not set it. Webpack leaves out of the bundle every
+variable your code does not read.
 
 > [!WARNING]  
 > Never expose a secret, eg. an API key, through `process.env`. Anyone who loads
@@ -218,9 +224,10 @@ import { Component } from "@self/components"
 ```
 
 > [!NOTE]  
-> VBlocks never reads your `tsconfig.json`, so `tsc` needs the alias too. The
-> `tsconfig.json` that [`vblocks init`](#vblocks-init) writes already has it.
-> Otherwise, add:
+> VBlocks compiles TypeScript with SWC and does not typecheck. Run `tsc`
+> yourself. Your `tsconfig.json` needs the same alias as Webpack.  
+> The `tsconfig.json` that [`vblocks init`](#vblocks-init) writes already has
+> it. Otherwise, add:
 >
 > ```json
 > {
@@ -255,16 +262,20 @@ import { Component } from "@self/components"
   `development` mode
 
 > [!NOTE]  
-> The [client types](src/types/client.d.ts) declare `.css` imports and other
-> common client specific extensions like `.png`, `.ttf` etc.
+> The [client types](src/types/client.d.ts) declare `.css`, image and font
+> imports
 
 ### Replace a default config
 
-Each of these configs in your app folder replaces the default of the same name:
+Each config in your app folder replaces the default of the same name:
 
 - `webpack.config.js`
 - `postcss.config.js`
+  - `postcss-preset-env`, which compiles nesting, `oklch()` and `color-mix()`
+    for older browsers and adds vendor prefixes
+  - `cssnano` in `production`
 - `.swcrc`
+  - browser targets `> 0.25%, not dead`
 
 1. **[Eject](#vblocks-eject) the default into your app folder**
 
@@ -369,8 +380,9 @@ app folder:
 
 <!--
 Diátaxis: reference. Mirror SYNOPSIS and OPTIONS of `vblocks --help`, in the
-same words. Each option and operand is a term, a line break, then its
-description, like OPTIONS in a man page.
+same words. The SYNOPSIS puts one option per line, with its values, so it fits
+the width of GitHub. Below it, each option is a bullet with its default, and
+its description in sub-bullets.
 -->
 
 ### `vblocks init`
@@ -378,116 +390,95 @@ description, like OPTIONS in a man page.
 Write a template's plumbing, app, or both into `<directory>`.
 
 ```text
-vblocks init <directory> [--template <name>] [--only <app|plumbing>]
+vblocks init <directory>
+  [--template <plain|xyflow>]
+  [--only <app|plumbing>]
 ```
 
-- `<directory>`\
-  The folder to write into. It must be missing or empty
-- `--template <name>`\
-  `plain`, or `xyflow` with React Flow and Tailwind (default: `plain`)
-- `--only <app|plumbing>`\
-  Write one part of the template (default: both)
+- `<directory>`
+  - The folder to write into. It must be missing or empty
+- `--template` (default: `plain`)
+  - `xyflow` adds React Flow and Tailwind
+- `--only` (default: both)
+  - Write one part of the template
   - `plumbing`: `package.json`, `.gitignore`
   - `app`: `src/`, `tsconfig.json` and the template's configs. `init` adds the
     template's dependencies to the `package.json` of the
     [project folder](#vocabulary), the nearest folder above `<directory>` with a
     `package.json`. Without that folder, `init` fails
 
-**Example**:
-
-<!--
-Using the `my-vblocks-` prefix, the package name, so a reader who tries several
-scaffolders spots the folder at a glance, as with `vite-project` and
-`nuxt-app`.
--->
-
-```sh
-npx @asd14/vblocks init my-vblocks-flow --template xyflow
-cd my-vblocks-flow
-npm install
-```
-
 ### `vblocks serve`
 
 Start the development server.
 
 - Runs at `http://localhost:8080`, or the next free port
-- Listens on this machine only. Pass `--host 0.0.0.0` to listen on the network
+- Listens on `localhost`, so another device on your network, eg. a phone, cannot
+  open the page
 - Opens the page in the browser
 
 ```text
-vblocks serve [--mode <mode>] [--prefix <directory>] [--analyze] [--log-level <level>] [<webpack option>...]
+vblocks serve
+  [--mode <development|production>]
+  [--prefix <directory>]
+  [--analyze]
+  [--log-level <error|warn|info|verbose>]
+  [<webpack option>...]
 ```
 
-- `--mode <mode>`\
-  The Webpack mode, `development` or `production` (default: `development`).
-  React Refresh runs only in `development`
-- `--prefix <directory>`\
-  The [app folder](#vocabulary), which must exist (default: the current folder)
-- `--analyze`\
-  Run the bundle analyzer, on a free port
-- `--log-level <level>`\
-  How much Webpack, its development server and npm print: `error`, `warn`,
-  `info` or `verbose` (default: `warn`)
-- `<webpack option>`\
-  Any other [`webpack serve`](https://webpack.js.org/api/cli/) option. VBlocks
-  passes it to Webpack unchanged
-
-**Example**:
-
-```sh
-cd my-vblocks-flow
-npx vblocks serve
-#        ↓↓↓
-# npx webpack serve --config <webpack config> \
-#   --env entryDir=<app folder> \
-#   --mode development \
-#   ...
-```
+- `--mode` (default: `development`)
+  - The Webpack mode
+  - React Refresh runs only in `development`
+- `--prefix` (default: the current folder)
+  - The [app folder](#vocabulary), which must exist
+- `--analyze`
+  - Run the bundle analyzer, on a free port
+- `--log-level` (default: `warn`)
+  - How much Webpack, its development server and npm print
+- `<webpack option>...`
+  - Any other [`webpack serve`](https://webpack.js.org/api/cli/) option, passed
+    unchanged, eg. `--host 0.0.0.0` to listen on the network
 
 ### `vblocks build`
 
-Build the app into a bundle in the `dist/` of the app folder. Without
-`--single-file`, `build`:
+Build the app into a bundle in the `dist/` of the app folder.
+
+By default, `build`:
 
 - Writes JS and CSS files with content-hashed names
 - Writes a `react` chunk, and a `vendors` chunk when your other dependencies
   total over 20 KB (10 KB in `development`)
+- Inlines `jpg`, `gif`, `png` and `svg` files up to 10 KB, writes larger ones to
+  `dist/` with content-hashed names
+- Writes `woff`, `woff2`, `ttf` and `eot` files to `dist/fonts/`
+- Copies `src/public/favicon.svg` and `src/public/robots.txt` of your app, or
+  the defaults of VBlocks
 
 ```text
-vblocks build [--mode <mode>] [--prefix <directory>] [--single-file] [--log-level <level>] [<webpack option>...]
+vblocks build
+  [--mode <development|production>]
+  [--prefix <directory>]
+  [--single-file]
+  [--log-level <error|warn|info|verbose>]
+  [<webpack option>...]
 ```
 
-- `--mode <mode>`\
-  The Webpack mode, `development` or `production` (default: `production`). In
-  `production`, `build` minifies JS and HTML, and the default PostCSS config
-  runs cssnano, which minifies CSS
-- `--prefix <directory>`\
-  The [app folder](#vocabulary), which must exist (default: the current folder)
-- `--single-file`\
-  `build` writes one standalone `dist/index.html`, every asset inlined
+- `--mode` (default: `production`)
+  - The Webpack mode
+  - In `production`, `build` minifies JS, HTML and, with the default PostCSS
+    config, CSS
+- `--prefix` (default: the current folder)
+  - The [app folder](#vocabulary), which must exist
+- `--single-file`
+  - Write one standalone `dist/index.html`, every asset inlined
   - A browser opens the file from disk, with no server and no network
   - The bundle has no `robots.txt`
-  - Keep the route in the URL hash. On `file://`, `history.pushState` to another
-    path throws
-- `--log-level <level>`\
-  How much Webpack and npm print: `error`, `warn`, `info` or `verbose` (default:
-  `warn`)
-- `<webpack option>`\
-  Any other [`webpack build`](https://webpack.js.org/api/cli/) option, eg.
-  `--stats errors-only`. VBlocks passes it to Webpack unchanged
-
-**Example**:
-
-```sh
-cd my-vblocks-flow
-npx vblocks build
-#        ↓↓↓
-# npx webpack build --config <webpack config> \
-#   --env entryDir=<app folder> \
-#   --mode production \
-#   ...
-```
+  - Keep the route in the URL hash
+    - On `file://`, `history.pushState` to another path throws
+- `--log-level` (default: `warn`)
+  - How much Webpack and npm print
+- `<webpack option>...`
+  - Any other [`webpack build`](https://webpack.js.org/api/cli/) option, passed
+    unchanged, eg. `--stats errors-only`
 
 ### `vblocks eject`
 
@@ -497,8 +488,8 @@ Print a default config to stdout.
 vblocks eject <webpack|postcss|swc>
 ```
 
-- `<webpack|postcss|swc>`\
-  The config to print
+- `<webpack|postcss|swc>`
+  - The config to print
 
 Save the output in your app folder to
 [replace the default](#replace-a-default-config):
@@ -508,77 +499,6 @@ npx vblocks eject webpack > webpack.config.js
 npx vblocks eject postcss > postcss.config.js
 npx vblocks eject swc > .swcrc
 ```
-
-<!--
-PARKED: sort each fact below into an existing section or a new one, or drop
-it. The client types and the PostCSS default have no home yet.
-
-    ## Details
-
-    ### TypeScript
-
-    VBlocks does not check types and never reads your `tsconfig.json`. It only
-    compiles TypeScript with SWC.
-
-    For convenience, VBlocks provides client types in
-    [`client.d.ts`](src/types/client.d.ts) for:
-
-    - `.css` imports
-    - Image and font imports
-    - `process.env`
-
-    You can use them in your `tsconfig.json`:
-
-    ```json
-    {
-      "compilerOptions": {
-        "types": ["@asd14/vblocks/client"]
-      }
-    }
-    ```
-
-    > [!NOTE]
-    > The `tsconfig.json` that [`vblocks init`](#vblocks-init) writes has the client
-    > types and the [`@self`](#stop-using--everywhere) alias.
-
-    ### PostCSS
-
-    The default `postcss.config.js`:
-
-    ```js
-    /**
-     * @param {{ mode: "production" | "development" | "none" }} api
-     */
-    export default ({ mode }) => ({
-      plugins: {
-        "postcss-preset-env": {
-          stage: 2,
-        },
-        "cssnano": mode === "production" && {
-          preset: "default",
-        },
-      },
-    })
-    ```
-
-    > [!NOTE]
-    > `postcss-preset-env` compiles nesting, `oklch()` and `color-mix()` for older
-    > browsers and adds vendor prefixes.
-
-    ### Asset Handling
-
-    - **Images** - the build inlines `jpg`, `gif`, `png` and `svg` files up to 10 KB
-    - **Fonts** - the build writes `woff`, `woff2`, `ttf` and `eot` files to
-      `dist/fonts/`
-    - **Favicon and `robots.txt`** - yours or the default. With `--single-file`, the
-      build inlines the favicon and leaves `robots.txt` out
-
-    ## How It Works
-
-    VBlocks is a POSIX shell script that runs Webpack. The script exports
-    `VB_POSTCSS_CONFIG` and `VB_SWC_CONFIG`, the paths of the configs it picked. The
-    Webpack config reads them.
--->
 
 ## License
 
