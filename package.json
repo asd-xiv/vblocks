@@ -1,7 +1,7 @@
 {
   "$schema": "https://json.schemastore.org/package.json",
   "name": "@asd14/vblocks",
-  "version": "4.0.0",
+  "version": "4.1.0",
   "description": "Zero-config React builds, as a static site or a single HTML file",
   "keywords": [
     "react",
