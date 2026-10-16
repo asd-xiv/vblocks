@@ -190,6 +190,9 @@ export default ({ entryDir, robotsPath, faviconPath, single }, { mode }) => {
 
     mode: mode,
 
+    // Keep the summary of VBlocks on screen, `--stats` overrides it
+    stats: "errors-warnings",
+
     output: {
       // A standalone file opens from disk, where "/" is the filesystem root
       publicPath: isSingle ? "" : "/",
