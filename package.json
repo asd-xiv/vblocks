@@ -3,6 +3,20 @@
   "name": "@asd14/vblocks",
   "version": "3.1.0",
   "description": "Zero-config React builds, as a static site or a single HTML file",
+  "keywords": [
+    "react",
+    "webpack",
+    "zero-config",
+    "single-file",
+    "static-site",
+    "spa",
+    "scaffolding",
+    "cli",
+    "ai-agents",
+    "swc",
+    "postcss",
+    "mdx"
+  ],
   "license": "MIT",
   "sideEffects": false,
   "publishConfig": {
