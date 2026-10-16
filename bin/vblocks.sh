@@ -378,7 +378,8 @@ run_webpack() {
     "$webpack_app_dir/src/public/favicon.svg" "$VB_DIR/src/public/favicon.svg")
 
   webpack_status=0
-  npx webpack "$webpack_action" --config "$webpack_config" \
+  # npm echoes every npx call at its default level, notice
+  npx --loglevel=warn webpack "$webpack_action" --config "$webpack_config" \
     --env "entryDir=$webpack_app_dir" \
     --env "robotsPath=$webpack_robots_file" \
     --env "faviconPath=$webpack_favicon_file" \
