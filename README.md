@@ -3,12 +3,33 @@
 
 # @asd14/vblocks
 
-> 📜 POSIX + 📦 Webpack, an unlikely story!
+> Zero-config React builds, as a static site or a single HTML file
 
-- **Minimal config** - Needs only `src/index.tsx` and `src/index.html`
-- **Maximal support** - SWC, PostCSS (CSS Modules configured), MDX, React
-  Refresh, Dotenv, bundle analyzer
-- **Static SPA** - Builds to `dist/` with no server part, for any static host
+**✂️ Zero config**  
+Needs only `src/index.tsx` and `src/index.html`
+
+<!--
+Using "Maximal support" to answer "Zero config" above: nothing to set up, and
+everything set up.
+-->
+
+**🔋 Maximal support**  
+SWC, PostCSS (CSS Modules configured), MDX, React Refresh, Dotenv
+
+<!--
+PARKED until SSG is finished, then name both outputs: SPA and SSG.
+
+**📄 Static website**
+Builds to `dist/`, for any static host
+-->
+
+**📦 Several apps, one install**  
+Apps share one `package.json` and `node_modules/`, a new app reuses the
+installed packages
+
+**🤖 Optimized for AI agents**  
+No config to write, so an agent spends its tokens on the content, not on the
+setup
 
 > [!IMPORTANT]  
 > VBlocks needs Node `^22.22.3`, `^24.15.0` or `>=26.0`.
@@ -55,6 +76,11 @@ tutorial, How to is how-to guides, Vocabulary and Commands are reference.
 <!--
 Diátaxis: tutorial. The fewest steps to a working build. It shows enough of
 VBlocks for the reader to decide whether VBlocks fits their project.
+-->
+
+<!--
+Using "scaffold", the field's word for what `init` does, eg. Yeoman and
+create-vite use it.
 -->
 
 1. **Scaffold a minimal React project**
@@ -169,9 +195,9 @@ another reader, eg. one with an existing app, goes last.
    const apiUrl = process.env["API_URL"]
    ```
 
-Webpack replaces each `process.env` with the variable's value. A variable that
-`.env` does not set is replaced with `undefined`. The build leaves out every
-variable your code does not read.
+Webpack replaces each `process.env["NAME"]` with the value of `NAME`, and
+`undefined` when `.env` does not set it. The build leaves out every variable
+your code does not read.
 
 > [!WARNING]  
 > Never expose a secret, eg. an API key, through `process.env`. Anyone who loads
@@ -358,11 +384,16 @@ vblocks init <directory> [--template <name>] [--only <app|plumbing>]
 - `--only <app|plumbing>`\
   Write one part of the template (default: both)
   - `plumbing`: `package.json`, `.gitignore`
-  - `app`: `src/`, `tsconfig.json` and the template's configs. The template's
-    hook adds its dependencies to the nearest `package.json` above
-    `<directory>`. Without one, `init` fails
+  - `app`: `src/`, `tsconfig.json` and the template's configs. `init` adds the
+    template's dependencies to the nearest `package.json` above `<directory>`.
+    Without one, `init` fails
 
 **Example**:
+
+<!--
+Using the `my-vblock-` prefix, so a reader who tries several scaffolders spots
+the folder at a glance, as with `vite-project` and `nuxt-app`.
+-->
 
 ```sh
 npx @asd14/vblocks init my-vblock-flow --template xyflow
@@ -417,8 +448,8 @@ vblocks build [--mode <mode>] [--prefix <directory>] [--single-file] [<webpack o
 
 - `--mode <mode>`\
   The Webpack mode, `development` or `production` (default: `production`). In
-  `production`, the build minifies JS and HTML, and the default PostCSS config
-  minifies CSS
+  `production`, the build minifies JS and HTML, and cssnano, in the default
+  PostCSS config, minifies CSS
 - `--prefix <directory>`\
   The [app folder](#vocabulary), which must exist (default: the current folder)
 - `--single-file`\
