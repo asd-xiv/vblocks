@@ -20,9 +20,11 @@ set -eu
 #   VBlocks with the same name.
 #
 #     init    Write a template into <directory>, which must be missing or
-#             empty. A template has two parts: the plumbing, the files of
-#             the project folder, and the app. Without --only, write both.
-#             After each part, run its post-init hooks in <directory>
+#             empty. A template has two parts: the plumbing, which holds
+#             the files of the project folder, and the app. Without --only,
+#             write both.
+#             After each part, run its post-init hooks in <directory>.
+#             Print each file it adds or updates, then the next steps
 #     serve   Start the development server
 #     build   Build the app into dist/ in the app folder
 #     eject   Print a default config, to save in the app folder
@@ -32,9 +34,9 @@ set -eu
 # OPTIONS
 #   --template <name>       init: plain or xyflow (default: plain)
 #   --only <app|plumbing>   init: write only the app or only the plumbing.
-#                           The app adds its dependencies to the project
-#                           folder: the nearest folder above <directory>
-#                           with a package.json
+#                           init adds the app's dependencies to the
+#                           project folder: the nearest folder above
+#                           <directory> with a package.json
 #   --mode <mode>           serve, build: the Webpack mode, development or
 #                           production (default: development for serve,
 #                           production for build)
@@ -46,8 +48,7 @@ set -eu
 #   -h, --help              Print this help
 #
 # ENVIRONMENT
-#   NO_COLOR   Disables color in the summary of serve and build when set and
-#              non-empty
+#   NO_COLOR   When set and non-empty, print every summary without color
 #
 # EXAMPLE
 #   npx @asd14/vblocks init my-app
@@ -59,8 +60,8 @@ set -eu
 # EXIT CODES
 #   0   Done
 #   2   Invalid usage, or Webpack rejected an option or the config
-#   3   Could not run: a missing tool or project, a failed copy, hook or
-#       build
+#   3   Could not run: a missing tool or project, or a failed folder, copy,
+#       hook or build
 #
 # SEE ALSO
 #   webpack, npm
@@ -118,7 +119,7 @@ require_cmd() {
 #
 # RETURNS
 #   0   stderr is a terminal that shows color
-#   1   It is not, or NO_COLOR is set
+#   1   It is not, NO_COLOR is non-empty, or TERM is dumb or unset
 has_color() {
   [ -t 2 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != "dumb" ]
 }
@@ -151,6 +152,18 @@ shorten_home() {
   printf '%s\n' "$1"
 }
 
+# shorten_path <absolute-path>
+#
+# Print <absolute-path> relative to the current folder when it is inside it,
+# otherwise with the home folder as "~".
+shorten_path() {
+  case "$1" in
+    "$PWD") printf '.\n' ;;
+    "$PWD"/*) printf '%s\n' "${1#"$PWD"/}" ;;
+    *) shorten_home "$1" ;;
+  esac
+}
+
 # ╭───
 # │ Domain primitives
 # ╰───
@@ -173,8 +186,8 @@ list_templates() {
 
 # find_project_root <directory>
 #
-# Print the nearest folder above <directory> that holds a package.json. The
-# folders of <directory> need not exist yet.
+# Print the nearest folder above <directory> that holds a package.json.
+# <directory> and the folders above it need not exist yet.
 #
 # RETURNS
 #   1   No folder above <directory> holds one
@@ -188,7 +201,7 @@ find_project_root() {
     root_dir=$(dirname "$root_dir")
 
     if [ -f "$root_dir/package.json" ]; then
-      # Drop "." and ".." from the path, the caller compares it with `pwd`
+      # Drop "." and ".." from the path. The caller compares it with `pwd`
       (cd -- "$root_dir" && pwd)
       return 0
     fi
@@ -240,13 +253,100 @@ show_config_file() {
   esac
 }
 
+# print_title
+#
+# Print the first line of a summary box: the name and the version.
+print_title() {
+  printf '╭───────────┤ %s\n' "${GREEN} VBlocks v${VB_VERSION}${RESET}"
+}
+
+# snapshot_folder <dir>
+#
+# Print one line per file in <dir>: its checksum, a tab, its path relative to
+# <dir>. Skip node_modules/, dist/ and .git/. init never writes there, and
+# they can hold thousands of files.
+snapshot_folder() {
+  (cd -- "$1" && find . \( -name node_modules -o -name dist -o -name .git \) \
+    -prune -o -type f -print) \
+    | sed 's|^\./||' \
+    | LC_ALL=C sort \
+    | while IFS= read -r snapshot_file; do
+      printf '%s\t%s\n' "$(cksum < "$1/$snapshot_file")" "$snapshot_file"
+    done
+}
+
+# print_changes <before-snapshot> <after-snapshot> <app-subdir>
+#
+# Print "add", "update" or "drop" for each file that differs between two
+# snapshots of the project folder. A path inside <app-subdir> prints as
+# $APP_DIR/..., the rest as $PROJECT_DIR/... <app-subdir> is "." when the app
+# is the project folder, empty when there is no app.
+print_changes() {
+  # Every snapshot line has a tab. The AFTER line has none, so it marks where
+  # the second snapshot starts
+  {
+    printf '%s\n' "$1"
+    printf 'AFTER\n'
+    printf '%s\n' "$2"
+  } | awk -F '\t' -v app="$3" '
+    function label(path) {
+      if (app == ".") return "$APP_DIR/" path
+      if (app != "" && index(path, app "/") == 1) {
+        return "$APP_DIR/" substr(path, length(app) + 2)
+      }
+      return "$PROJECT_DIR/" path
+    }
+
+    NF < 2 { is_after = 1; next }
+    !is_after { before[$2] = $1; next }
+    {
+      seen[$2] = 1
+      if (!($2 in before)) printf "%-8s%s\n", "add", label($2)
+      else if (before[$2] != $1) printf "%-8s%s\n", "update", label($2)
+    }
+    END {
+      for (path in before) {
+        if (!(path in seen)) printf "%-8s%s\n", "drop", label(path)
+      }
+    }
+  '
+}
+
+# print_init_summary <parts> <template> <project-dir> <app-dir>
+#
+# Print the version, the parts of <template> that init writes and their
+# folders, to stderr. <app-dir> is empty when init writes no app.
+print_init_summary() {
+  case "$1" in
+    plumbing) summary_parts="plumbing" ;;
+    app) summary_parts="app, $2" ;;
+    *) summary_parts="plumbing and app, $2" ;;
+  esac
+
+  {
+    print_title
+    printf '│ %s\n' "init: $summary_parts"
+    printf '│\n'
+
+    # When plumbing and app share one folder, print it once, as $APP_DIR
+    if [ "$3" != "$4" ]; then
+      printf '│ %s\n' "\$PROJECT_DIR: $(shorten_home "$3")"
+    fi
+    if [ -n "$4" ]; then
+      printf '│ %s\n' "\$APP_DIR:     $(shorten_home "$4")"
+    fi
+
+    printf '╰──┤\n\n'
+  } >&2
+}
+
 # print_summary <app-dir> <webpack-config> <postcss-config> <swc-config>
 #
 # Print the version, the app folder and the configs Webpack runs with, to
 # stderr.
 print_summary() {
   {
-    printf '╭───────────┤ %s\n' "${GREEN} VBlocks v${VB_VERSION}${RESET}"
+    print_title
     printf '│ %s\n' "${BOLD}󱆃 POSIX +  Webpack, an unlikely story!${RESET}"
     printf '│\n'
     printf '│ %s\n' "\$APP_DIR:     $(shorten_home "$1")"
@@ -348,7 +448,7 @@ case "$COMMAND" in
         --)
           shift
           if [ "$#" -ne 1 ] || [ -n "$INIT_DIR" ]; then
-            fail 2 "init takes one directory"
+            fail 2 "init takes one folder"
           fi
           INIT_DIR=$1
           shift
@@ -357,21 +457,30 @@ case "$COMMAND" in
           fail 2 "Unknown flag $1"
           ;;
         *)
-          [ -n "$INIT_DIR" ] && fail 2 "init takes one directory"
+          [ -n "$INIT_DIR" ] && fail 2 "init takes one folder"
           INIT_DIR=$1
           shift
           ;;
       esac
     done
 
-    [ -z "$INIT_DIR" ] && fail 2 "init needs a directory"
+    [ -z "$INIT_DIR" ] && fail 2 "init needs a folder"
+
+    # One shape for the printed paths: no trailing "/", and no leading "-" that
+    # a command would read as a flag
+    while [ "$INIT_DIR" != "/" ] && [ "${INIT_DIR%/}" != "$INIT_DIR" ]; do
+      INIT_DIR=${INIT_DIR%/}
+    done
+    case "$INIT_DIR" in
+      -*) INIT_DIR="./$INIT_DIR" ;;
+    esac
 
     if ! list_templates | grep -qxF -- "$TEMPLATE"; then
       fail 2 "Unknown template \"$TEMPLATE\". Available: $(list_templates | paste -sd ' ' -)"
     fi
     ;;
   serve | build)
-    # Take the flags of VBlocks out of the arguments, Webpack gets the rest
+    # Take the flags of VBlocks out of the arguments. Webpack gets the rest
     ARG_COUNT=$#
     while [ "$ARG_COUNT" -gt 0 ]; do
       ARG=$1
@@ -380,19 +489,21 @@ case "$COMMAND" in
 
       case "$ARG" in
         --prefix)
-          [ "$ARG_COUNT" -eq 0 ] && fail 2 "--prefix needs a directory"
+          [ "$ARG_COUNT" -eq 0 ] && fail 2 "--prefix needs a folder"
           PREFIX=$1
           shift
           ARG_COUNT=$((ARG_COUNT - 1))
           ;;
         --single-file)
           [ "$COMMAND" = "build" ] || fail 2 "--single-file works only with build"
-          # webpack.config.js reads env.single, an ejected one too
+          # The Webpack config does the work. An ejected config supports the
+          # flag only while it reads env.single
           set -- "$@" --env single
           ;;
         --analyze)
           [ "$COMMAND" = "serve" ] || fail 2 "--analyze works only with serve"
-          # webpack.config.js reads env.analyze, an ejected one too
+          # The Webpack config does the work. An ejected config supports the
+          # flag only while it reads env.analyze
           set -- "$@" --env analyze
           ;;
         *)
@@ -402,7 +513,7 @@ case "$COMMAND" in
     done
 
     if [ -n "$PREFIX" ] && [ ! -d "$PREFIX" ]; then
-      fail 2 "$PREFIX is not a directory"
+      fail 2 "$PREFIX is not a folder"
     fi
     ;;
   eject)
@@ -432,32 +543,58 @@ case "$COMMAND" in
       fi
     fi
 
-    # An app joins a project, the app hooks write its package.json
-    PROJECT_ROOT=""
+    # An app needs a project folder. The app hooks write to its package.json
+    PROJECT_DIR=""
     if [ "$PARTS" = "app" ]; then
-      PROJECT_ROOT=$(find_project_root "$INIT_DIR") \
+      PROJECT_DIR=$(find_project_root "$INIT_DIR") \
         || fail 3 "No package.json above $INIT_DIR. Write the project first: npx @asd14/vblocks init <directory> --only plumbing"
     fi
 
-    mkdir -p -- "$INIT_DIR" || fail 3 "Could not create $INIT_DIR"
-    init_project "$INIT_DIR" "$TEMPLATE" "$PARTS"
+    mkdir -p -- "$INIT_DIR" || fail 3 "Could not add $INIT_DIR"
+    INIT_ABS_DIR=$(cd -- "$INIT_DIR" && pwd)
 
     case "$PARTS" in
       plumbing)
-        printf 'Wrote %s. Add an app:\n\n' "$INIT_DIR" >&2
-        printf '  npx @asd14/vblocks init %s/<app> --only app\n' "$INIT_DIR" >&2
+        PROJECT_DIR=$INIT_ABS_DIR
+        APP_DIR=""
+        APP_SUBDIR=""
         ;;
       app)
-        APP_DIR=$(cd -- "$INIT_DIR" && pwd)
-        printf 'Wrote %s. Next, in %s:\n\n' "$INIT_DIR" "$PROJECT_ROOT" >&2
-        printf '  npm install\n' >&2
-        printf '  npm start -- --prefix %s\n' "${APP_DIR#"$PROJECT_ROOT"/}" >&2
+        APP_DIR=$INIT_ABS_DIR
+        APP_SUBDIR=${APP_DIR#"$PROJECT_DIR"/}
         ;;
       *)
-        printf 'Wrote %s. Next:\n\n' "$INIT_DIR" >&2
-        printf '  cd %s\n' "$INIT_DIR" >&2
-        printf '  npm install\n' >&2
-        printf '  npm start\n' >&2
+        PROJECT_DIR=$INIT_ABS_DIR
+        APP_DIR=$INIT_ABS_DIR
+        APP_SUBDIR="."
+        ;;
+    esac
+
+    BEFORE_SNAPSHOT=$(snapshot_folder "$PROJECT_DIR")
+    init_project "$INIT_DIR" "$TEMPLATE" "$PARTS"
+    AFTER_SNAPSHOT=$(snapshot_folder "$PROJECT_DIR")
+
+    print_init_summary "$PARTS" "$TEMPLATE" "$PROJECT_DIR" "$APP_DIR"
+    print_changes "$BEFORE_SNAPSHOT" "$AFTER_SNAPSHOT" "$APP_SUBDIR"
+
+    case "$PARTS" in
+      plumbing)
+        printf '\nNext, add an app:\n\n'
+        printf '  npx @asd14/vblocks init %s/<app> --only app\n' "$INIT_DIR"
+        ;;
+      app)
+        printf '\nNext:\n\n'
+        if [ "$PROJECT_DIR" != "$PWD" ]; then
+          printf '  cd %s\n' "$(shorten_path "$PROJECT_DIR")"
+        fi
+        printf '  npm install\n'
+        printf '  npx vblocks serve --prefix %s\n' "$APP_SUBDIR"
+        ;;
+      *)
+        printf '\nNext:\n\n'
+        printf '  cd %s\n' "$INIT_DIR"
+        printf '  npm install\n'
+        printf '  npx vblocks serve\n'
         ;;
     esac
     exit 0
@@ -474,7 +611,7 @@ case "$COMMAND" in
     print_summary "$APP_DIR" "$WEBPACK_CONFIG" "$VB_POSTCSS_CONFIG" "$VB_SWC_CONFIG"
 
     # Without a mode, Webpack takes `production`, also for `serve`. A --mode in
-    # "$@" comes later, so it wins
+    # "$@" comes later, so it overrides this one
     if [ "$COMMAND" = "build" ]; then
       run_webpack build "$APP_DIR" "$WEBPACK_CONFIG" --mode production "$@"
     else
