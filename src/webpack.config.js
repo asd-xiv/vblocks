@@ -340,6 +340,10 @@ export default (
           // Tells dev-server to open the browser after server had been started.
           open: true,
 
+          // Serve only what Webpack builds, not a public/ folder in the
+          // folder VBlocks runs in
+          static: false,
+
           // Print the URL once, as the result of serve. The startup lines of
           // the dev server stay hidden, see infrastructureLogging
           onListening: developmentServer => {
