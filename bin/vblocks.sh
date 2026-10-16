@@ -7,8 +7,9 @@ set -eu
 #
 # SYNOPSIS
 #   vblocks init <directory> [--template <name>] [--only <app|plumbing>]
-#   vblocks serve [--prefix <directory>] [<webpack option>...]
-#   vblocks build [--prefix <directory>] [<webpack option>...]
+#   vblocks serve [--mode <mode>] [--prefix <directory>] [<webpack option>...]
+#   vblocks build [--mode <mode>] [--prefix <directory>] [--single-file]
+#                 [<webpack option>...]
 #   vblocks eject <webpack|postcss|swc>
 #   vblocks -h | --help
 #
@@ -21,20 +22,24 @@ set -eu
 #             empty. A template has two parts: the plumbing, the files of
 #             the project root, and the app. Without --only, write both.
 #             After each part, run its post-init hooks in <directory>
-#     serve   Start the development server, in development mode
-#     build   Build the app into dist/ in the app folder, in production mode
+#     serve   Start the development server
+#     build   Build the app into dist/ in the app folder
 #     eject   Print a default config, to save in the app folder
 #
-#   serve and build pass every other option to Webpack, eg. --mode or
-#   --env single.
+#   serve and build pass every option not listed under OPTIONS to Webpack.
 #
 # OPTIONS
 #   --template <name>       init: plain or xyflow (default: plain)
 #   --only <part>           init: write only the app or only the plumbing.
 #                           The app goes into a project: the nearest folder
 #                           above <directory> with a package.json
+#   --mode <mode>           serve, build: the Webpack mode, development or
+#                           production (default: development for serve,
+#                           production for build)
 #   --prefix <directory>    serve, build: the app folder (default: the
 #                           current folder)
+#   --single-file           build: one standalone dist/index.html, every
+#                           asset inlined
 #   -h, --help              Print this help
 #
 # ENVIRONMENT
@@ -45,7 +50,7 @@ set -eu
 #   npx @asd14/vblocks init my-app
 #   npx @asd14/vblocks init demos --only plumbing
 #   npx @asd14/vblocks init demos/flow --template xyflow --only app
-#   npx vblocks build --prefix flow --env single
+#   npx vblocks build --prefix flow --single-file
 #   npx vblocks eject postcss > postcss.config.js
 #
 # EXIT CODES
@@ -363,21 +368,29 @@ case "$COMMAND" in
     fi
     ;;
   serve | build)
-    # Take --prefix out of the arguments, Webpack gets the rest
+    # Take the flags of VBlocks out of the arguments, Webpack gets the rest
     ARG_COUNT=$#
     while [ "$ARG_COUNT" -gt 0 ]; do
       ARG=$1
       shift
       ARG_COUNT=$((ARG_COUNT - 1))
 
-      if [ "$ARG" = "--prefix" ]; then
-        [ "$ARG_COUNT" -eq 0 ] && fail 2 "--prefix needs a directory"
-        PREFIX=$1
-        shift
-        ARG_COUNT=$((ARG_COUNT - 1))
-      else
-        set -- "$@" "$ARG"
-      fi
+      case "$ARG" in
+        --prefix)
+          [ "$ARG_COUNT" -eq 0 ] && fail 2 "--prefix needs a directory"
+          PREFIX=$1
+          shift
+          ARG_COUNT=$((ARG_COUNT - 1))
+          ;;
+        --single-file)
+          [ "$COMMAND" = "build" ] || fail 2 "--single-file works only with build"
+          # webpack.config.js reads env.single, an ejected one too
+          set -- "$@" --env single
+          ;;
+        *)
+          set -- "$@" "$ARG"
+          ;;
+      esac
     done
 
     if [ -n "$PREFIX" ] && [ ! -d "$PREFIX" ]; then

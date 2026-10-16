@@ -10,7 +10,7 @@ set -eu
 #
 # DESCRIPTION
 #   For each template in `template/`, runs `vblocks init` into `tmp/<name>`,
-#   then `vblocks build` and `vblocks build --env single` there. A template is
+#   then `vblocks build` and `vblocks build --single-file` there. A template is
 #   a folder whose name has no `_` prefix.
 #
 #   Then runs `vblocks init --only plumbing` into `tmp/_apps`, adds one app per
@@ -55,7 +55,7 @@ build_template() {
   (
     cd -- "$build_dir"
     "$VBLOCKS_SCRIPT" build
-    "$VBLOCKS_SCRIPT" build --env single
+    "$VBLOCKS_SCRIPT" build --single-file
   )
 }
 
@@ -77,7 +77,7 @@ build_apps() {
   (
     cd -- "$apps_dir" || exit 1
     for apps_template in "$@"; do
-      "$VBLOCKS_SCRIPT" build --prefix "$apps_template" --env single || exit 1
+      "$VBLOCKS_SCRIPT" build --prefix "$apps_template" --single-file || exit 1
     done
   )
 }

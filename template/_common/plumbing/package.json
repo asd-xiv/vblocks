@@ -6,7 +6,7 @@
   "scripts": {
     "start": "vblocks serve",
     "build": "vblocks build",
-    "build:single": "vblocks build --env single",
+    "build:single": "vblocks build --single-file",
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
