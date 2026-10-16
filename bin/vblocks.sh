@@ -3,7 +3,7 @@
 set -eu
 
 # NAME
-#   vblocks - Run Webpack with the configs of VBlocks, write a project
+#   vblocks - Run Webpack with the configs of VBlocks, write a project or an app
 #
 # SYNOPSIS
 #   vblocks init <directory> [--template <name>] [--only <app|plumbing>]
@@ -20,7 +20,7 @@ set -eu
 #
 #     init    Write a template into <directory>, which must be missing or
 #             empty. A template has two parts: the plumbing, the files of
-#             the project root, and the app. Without --only, write both.
+#             the project folder, and the app. Without --only, write both.
 #             After each part, run its post-init hooks in <directory>
 #     serve   Start the development server
 #     build   Build the app into dist/ in the app folder
@@ -30,9 +30,10 @@ set -eu
 #
 # OPTIONS
 #   --template <name>       init: plain or xyflow (default: plain)
-#   --only <part>           init: write only the app or only the plumbing.
-#                           The app goes into a project: the nearest folder
-#                           above <directory> with a package.json
+#   --only <app|plumbing>   init: write only the app or only the plumbing.
+#                           The app adds its dependencies to the project
+#                           folder: the nearest folder above <directory>
+#                           with a package.json
 #   --mode <mode>           serve, build: the Webpack mode, development or
 #                           production (default: development for serve,
 #                           production for build)
@@ -227,11 +228,11 @@ init_project() {
 
 # show_config_file <config-file> <app-dir>
 #
-# Print <config-file> with its folder as $PROJECT_DIR, or as $VBLOCKS_DIR in
+# Print <config-file> with its folder as $APP_DIR, or as $VBLOCKS_DIR in
 # gray for a default config.
 show_config_file() {
   case "$1" in
-    "$2"/*) printf '%s\n' "\$PROJECT_DIR/${1#"$2"/}" ;;
+    "$2"/*) printf '%s\n' "\$APP_DIR/${1#"$2"/}" ;;
     "$VB_DIR"/*) printf '%s\n' "${GRAY}\$VBLOCKS_DIR/${1#"$VB_DIR"/}${RESET}" ;;
     *) printf '%s\n' "$1" ;;
   esac
@@ -246,7 +247,7 @@ print_summary() {
     printf '╭───────────┤ %s\n' "${GREEN} VBlocks v${VB_VERSION}${RESET}"
     printf '│ %s\n' "${BOLD}󱆃 POSIX +  Webpack, an unlikely story!${RESET}"
     printf '│\n'
-    printf '│ %s\n' "\$PROJECT_DIR: $(shorten_home "$1")"
+    printf '│ %s\n' "\$APP_DIR:     $(shorten_home "$1")"
     printf '│ %s\n' "\$VBLOCKS_DIR: ${GRAY}$(shorten_home "$VB_DIR")${RESET}"
     printf '│\n'
     printf '│ %s\n' " Webpack: $(show_config_file "$2" "$1")"
