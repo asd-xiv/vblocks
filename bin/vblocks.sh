@@ -279,13 +279,13 @@ snapshot_folder() {
     done
 }
 
-# print_changes <before-snapshot> <after-snapshot> <app-subdir>
+# print_snapshot_diff <before-snapshot> <after-snapshot> <app-subdir>
 #
 # Print "add", "update" or "drop" for each file that differs between two
 # snapshots of the project folder. A path inside <app-subdir> prints as
 # $APP_DIR/..., the rest as $PROJECT_DIR/... <app-subdir> is "." when the app
 # is the project folder, empty when there is no app.
-print_changes() {
+print_snapshot_diff() {
   # Every snapshot line has a tab. The AFTER line has none, so it marks where
   # the second snapshot starts
   {
@@ -596,7 +596,7 @@ case "$COMMAND" in
     AFTER_SNAPSHOT=$(snapshot_folder "$PROJECT_DIR")
 
     print_init_summary "$PARTS" "$TEMPLATE" "$PROJECT_DIR" "$APP_DIR"
-    print_changes "$BEFORE_SNAPSHOT" "$AFTER_SNAPSHOT" "$APP_SUBDIR"
+    print_snapshot_diff "$BEFORE_SNAPSHOT" "$AFTER_SNAPSHOT" "$APP_SUBDIR"
 
     case "$PARTS" in
       plumbing)
