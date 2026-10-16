@@ -352,6 +352,8 @@ export default ({ entryDir, robotsPath, faviconPath, single }, { mode }) => {
 
       new DotenvPlugin({
         path: paths.dotenv,
+        // Don't spam logs, an app without a .env is common
+        silent: true,
       }),
 
       !isSingle &&
