@@ -11,16 +11,17 @@ import webpack from "webpack"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 
 const VB_SWC_CONFIG = process.env["VB_SWC_CONFIG"]
-const VB_POSTCONFIG_PATH = process.env["VB_POSTCSS_CONFIG"]
+const VB_POSTCSS_CONFIG = process.env["VB_POSTCSS_CONFIG"]
 
 if (!VB_SWC_CONFIG)
   throw new Error("VB_SWC_CONFIG environment variable is not defined")
 
-if (!VB_POSTCONFIG_PATH)
+if (!VB_POSTCSS_CONFIG)
   throw new Error("VB_POSTCSS_CONFIG environment variable is not defined")
 
 /**
- * Load, parse and provide targets defaults for SWC configuration
+ * Read the SWC config, default its browser targets, and turn on React Refresh
+ * when asked
  *
  * @param {{ hasReactRefresh: boolean }} options
  */
@@ -52,11 +53,11 @@ const loadSwcConfig = ({ hasReactRefresh }) => {
 }
 
 /**
- * CSS module configuration shared between global and local styles
+ * The CSS Modules options of css-loader, shared by global and local styles
  *
  * @param {boolean} isProduction
  */
-const createCssModuleConfig = isProduction => ({
+const getCssModuleOptions = isProduction => ({
   // import styles from './styles.module.css'
   // instead of
   // import * as styles from './styles.module.css'
@@ -214,9 +215,9 @@ const inlineAssets = compiler => {
 /**
  * @typedef {Object} VBlocksEnvironment
  *
- * @property {string} entryDir - Target directory from where vblocks cmd was called
- * @property {string} robotsPath - Path to robots.txt copied to the output directory
- * @property {string} faviconPath - Path to favicon.ico copied to the output directory
+ * @property {string} entryDir - The app folder: `--prefix`, or the folder vblocks runs in
+ * @property {string} robotsPath - Path to the robots.txt copied to the output folder
+ * @property {string} faviconPath - Path to the favicon.svg copied to the output folder
  * @property {boolean} [single] - Build one standalone index.html, every asset inlined
  * @property {boolean} [analyze] - Run the bundle analyzer next to the dev server
  * @property {"error"|"warn"|"info"|"verbose"} [logLevel] - How much Webpack and its dev server print
@@ -253,7 +254,7 @@ export default (
   const isAnalyze = Boolean(analyze) && isServe
   const hasReactRefresh = isServe && mode === "development"
   const swcConfig = loadSwcConfig({ hasReactRefresh })
-  const commonPostCSSConfigs = createCssModuleConfig(isProduction)
+  const cssModuleOptions = getCssModuleOptions(isProduction)
 
   const paths = {
     appEntry: `${entryDir}/src/index.tsx`,
@@ -266,9 +267,8 @@ export default (
   }
 
   return {
-    // The order of entries matters.
-    // The global CSS file needs to be first in the array to ensure its
-    // styles are loaded before any component-specific styles.
+    // The global CSS comes first, so component styles load after it and win
+    // ties
     entry: [
       ...(fs.existsSync(paths.globalCssEntry) ? [paths.globalCssEntry] : []),
       paths.appEntry,
@@ -288,16 +288,17 @@ export default (
       // A standalone file opens from disk, where "/" is the filesystem root
       publicPath: isSingle ? "" : "/",
       path: paths.output,
-      // Cannot use 'contenthash' when hot reloading is enabled.
+      // Hot reloading breaks on `[contenthash]` names, so serve leaves out the
+      // hash
       filename: isServe ? "js/[name].js" : "js/[name].[contenthash].js",
-      // Delete existing files in the output directory before building
+      // Empty the output folder before each build
       clean: true,
     },
 
     devtool: isServe ? "eval-source-map" : false,
 
-    // Both Webpack and SWC should use the same browserslist configuration
-    // with .swcrc as source of truth
+    // Webpack builds for the browser targets of the SWC config, so both tools
+    // agree
     target: `browserslist:${swcConfig.env.targets}`,
 
     module: {
@@ -327,7 +328,7 @@ export default (
             {
               loader: "css-loader",
               options: {
-                // Enable/disable @import resolving.
+                // Resolve @import in CSS files
                 import: true,
 
                 // Apply "postcss-loader" on imported css files before
@@ -335,7 +336,7 @@ export default (
                 importLoaders: 1,
 
                 modules: {
-                  ...commonPostCSSConfigs,
+                  ...cssModuleOptions,
                   mode: "local",
                 },
               },
@@ -344,7 +345,7 @@ export default (
               loader: "postcss-loader",
               options: {
                 postcssOptions: {
-                  config: VB_POSTCONFIG_PATH,
+                  config: VB_POSTCSS_CONFIG,
                 },
               },
             },
@@ -360,7 +361,7 @@ export default (
             {
               loader: "css-loader",
               options: {
-                // Enable/disable @import resolving.
+                // Resolve @import in CSS files
                 import: true,
 
                 // Apply "postcss-loader" on imported css files before
@@ -368,7 +369,7 @@ export default (
                 importLoaders: 1,
 
                 modules: {
-                  ...commonPostCSSConfigs,
+                  ...cssModuleOptions,
                   mode: "global",
                 },
               },
@@ -377,7 +378,7 @@ export default (
               loader: "postcss-loader",
               options: {
                 postcssOptions: {
-                  config: VB_POSTCONFIG_PATH,
+                  config: VB_POSTCSS_CONFIG,
                 },
               },
             },
@@ -414,16 +415,16 @@ export default (
     devServer: isServe
       ? {
           compress: true,
-          // When using the HTML5 History API, the index.html page will likely
-          // have to be served in place of any 404 responses.
+          // Serve index.html in place of a 404, so the router of the app handles
+          // every path
           historyApiFallback: true,
 
-          // Hot Module Replacement (HMR) exchanges, adds, or removes modules
-          // while an application is running, without a full reload.
+          // Hot Module Replacement updates, adds and drops modules in the running
+          // app, without a full reload
           // https://webpack.js.org/concepts/hot-module-replacement/
           hot: true,
 
-          // Tells dev-server to open the browser after server had been started.
+          // Open the browser once the server starts
           open: true,
 
           // Only this machine opens the page. `--host 0.0.0.0` exposes it to
@@ -489,7 +490,7 @@ export default (
           ],
         }),
 
-      // A dynamic `import()` would otherwise emit a second file
+      // Without it, Webpack emits a second file for each dynamic `import()`
       isSingle && new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
 
       isSingle && inlineAssets,
@@ -517,10 +518,11 @@ export default (
       // Enable tree shaking for unused exports
       usedExports: true,
 
-      // Merge runtime.js into main.js for fewer HTTP request
+      // Merge runtime.js into main.js for fewer HTTP requests
       runtimeChunk: false,
 
-      // Extract node_module dependencies into a separate chunk for better caching
+      // Split node_modules into the react and vendors chunks, so a new app
+      // build keeps their cache
       splitChunks: !isSingle && {
         chunks: "all",
         cacheGroups: {
