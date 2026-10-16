@@ -1,3 +1,3 @@
-/* Scan only this app. With `--prefix`, Webpack runs in the project root, where
-   Tailwind would also scan every other app */
+/* Scan only this app. With `--prefix`, you run VBlocks from the project folder,
+   where Tailwind would also scan every other app */
 @import "tailwindcss" source(".");
