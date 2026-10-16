@@ -20,8 +20,8 @@ if (!VB_POSTCSS_CONFIG)
   throw new Error("VB_POSTCSS_CONFIG environment variable is not defined")
 
 /**
- * Read the SWC config, default its browser targets, and turn on React Refresh
- * when asked
+ * Read the SWC config, set the browser targets it lacks, and turn on React
+ * Refresh when `hasReactRefresh` is true
  *
  * @param {{ hasReactRefresh: boolean }} options
  */
@@ -42,7 +42,7 @@ const loadSwcConfig = ({ hasReactRefresh }) => {
         ...typedConfig.jsc?.transform,
         react: {
           ...typedConfig.jsc?.transform?.react,
-          // SWC marks components and their hooks, `ReactRefreshWebpackPlugin`
+          // SWC marks components and their hooks. `ReactRefreshWebpackPlugin`
           // loads the runtime that reads the marks. One without the other
           // breaks the page
           ...(hasReactRefresh ? { development: true, refresh: true } : {}),
@@ -63,18 +63,55 @@ const getCssModuleOptions = isProduction => ({
   // import * as styles from './styles.module.css'
   namedExport: false,
 
-  // Use camelCase when referring to CSS classes in JavaScript code
-  // Example: styles.myClass in JS maps to .my-class in CSS
+  // Map `.my-class` in CSS to `styles.myClass` in JavaScript
   exportLocalsConvention: "camelCase",
 
-  // Use a unique hash in production, but include class names
-  // in development for easier debugging
+  // Production names a class by its hash alone. Development puts the class
+  // name before the hash, for debugging
   localIdentName: isProduction ? "[hash:base64:8]" : "[local]__[hash:base64:5]",
 })
 
 /**
- * Print one line of VBlocks: a verb, then what it acted on. The tag tells it
- * apart from the lines of Webpack
+ * The loaders of a CSS file. Webpack runs them last to first: PostCSS,
+ * css-loader, then the extract into a .css file
+ *
+ * @param {Object} options
+ * @param {"local" | "global"} options.classScope - `local` renames each class
+ *   to a unique name, for `*.module.css`. `global` keeps the names as written
+ * @param {boolean} options.isProduction
+ */
+const getCssLoaders = ({ classScope, isProduction }) => [
+  {
+    loader: MiniCssExtractPlugin.loader,
+  },
+  {
+    loader: "css-loader",
+    options: {
+      // Resolve @import in CSS files
+      import: true,
+
+      // Run postcss-loader on each @import-ed CSS file too, before css-loader
+      importLoaders: 1,
+
+      modules: {
+        ...getCssModuleOptions(isProduction),
+        mode: classScope,
+      },
+    },
+  },
+  {
+    loader: "postcss-loader",
+    options: {
+      postcssOptions: {
+        config: VB_POSTCSS_CONFIG,
+      },
+    },
+  },
+]
+
+/**
+ * Print one line of VBlocks: a verb, then its subject. The `[vblocks]` prefix
+ * lets the reader tell it apart from the lines of Webpack
  *
  * @param {string} verb
  * @param {string} subject
@@ -89,8 +126,8 @@ const log = (verb, subject) => {
 const MAX_REPORTED_FILE_EVENTS = 5
 
 /**
- * Print each file a compile in watch mode updates, adds to the build or drops,
- * as $APP_DIR/...
+ * In serve, print each file of the build that was updated, added or dropped
+ * since the last compile, as $APP_DIR/...
  *
  * @param {string} appDir
  * @returns {(compiler: import("webpack").Compiler) => void}
@@ -101,8 +138,8 @@ const reportFileEvents = appDir => compiler => {
   /** @type {Array<[string, string]>} */
   let fileEvents = []
 
-  // The watcher also names editor files, and folders, eg. the src/ Tailwind
-  // scans. Only a file the last compile used is part of the build
+  // The watcher also reports editor swap files and folders, eg. the src/ that
+  // Tailwind scans. Only a file the last compile used is part of the build
   compiler.hooks.watchRun.tap("VBlocksReportFileEvents", watcher => {
     fileEvents = []
     for (const file of watcher.modifiedFiles ?? []) {
@@ -118,7 +155,7 @@ const reportFileEvents = appDir => compiler => {
     }
   })
 
-  // A file joins the build when an import first reaches it, the watcher has
+  // A file joins the build when an import first reaches it. The watcher has
   // no event for that
   compiler.hooks.done.tap("VBlocksReportFileEvents", stats => {
     const files = new Set(stats.compilation.fileDependencies)
@@ -143,8 +180,9 @@ const reportFileEvents = appDir => compiler => {
 }
 
 /**
- * Replace every script, stylesheet and icon tag of the HTML with the content
- * of the file it points at, then drop that file from the output.
+ * Replace every script and stylesheet tag of the HTML with the content of the
+ * file it points at. Point the icon tag at a data URL of its file. Then drop
+ * each of those files from the output.
  *
  * Lives in this file so an ejected config stays one file.
  *
@@ -169,8 +207,9 @@ const inlineAssets = compiler => {
         return {
           ...tag,
           attributes: {},
-          // The HTML parser reads `</script` and `<!--` inside a script, a
-          // `\x3C` means the same `<` to JavaScript and nothing to the parser
+          // The HTML parser reads `</script` and `<!--` inside a script.
+          // Inside a JavaScript string, `\x3C` means `<` to JavaScript and
+          // nothing to the parser
           innerHTML: takeAsset(src)
             .toString()
             .replaceAll("</script", String.raw`\x3C/script`)
@@ -193,7 +232,7 @@ const inlineAssets = compiler => {
           ...tag,
           attributes: {
             rel,
-            // `bin/vblocks.sh` only ever passes a `favicon.svg`
+            // `bin/vblocks.sh` only passes a `favicon.svg`
             href: `data:image/svg+xml;base64,${Buffer.from(takeAsset(href)).toString("base64")}`,
           },
         }
@@ -215,7 +254,7 @@ const inlineAssets = compiler => {
 /**
  * @typedef {Object} VBlocksEnvironment
  *
- * @property {string} entryDir - The app folder: `--prefix`, or the folder vblocks runs in
+ * @property {string} entryDir - The app folder: `--prefix`, or the folder VBlocks runs in
  * @property {string} robotsPath - Path to the robots.txt copied to the output folder
  * @property {string} faviconPath - Path to the favicon.svg copied to the output folder
  * @property {boolean} [single] - Build one standalone index.html, every asset inlined
@@ -254,7 +293,6 @@ export default (
   const isAnalyze = Boolean(analyze) && isServe
   const hasReactRefresh = isServe && mode === "development"
   const swcConfig = loadSwcConfig({ hasReactRefresh })
-  const cssModuleOptions = getCssModuleOptions(isProduction)
 
   const paths = {
     appEntry: `${entryDir}/src/index.tsx`,
@@ -276,20 +314,21 @@ export default (
 
     mode: mode,
 
-    // Fold the saves within 100 ms into one rebuild, eg. a codemod. A
-    // longer wait would stop an edit from feeling instant
+    // Merge the saves within 100 ms into one compile, eg. those of a codemod.
+    // A longer wait would stop an edit from feeling instant
     watchOptions: { aggregateTimeout: 100 },
 
-    // Keep the summary of VBlocks on screen. `--log-level` sets it, `--stats`
-    // overrides it
+    // Print little, so the summary of VBlocks stays on screen. `--log-level`
+    // picks the stats preset. `--stats` overrides it
     stats: STATS_BY_LOG_LEVEL[logLevel],
 
     output: {
-      // A standalone file opens from disk, where "/" is the filesystem root
+      // The browser opens a standalone file from disk, where "/" is the
+      // filesystem root
       publicPath: isSingle ? "" : "/",
       path: paths.output,
-      // Hot reloading breaks on `[contenthash]` names, so serve leaves out the
-      // hash
+      // Hot Module Replacement breaks on `[contenthash]` names, so serve leaves
+      // out the hash
       filename: isServe ? "js/[name].js" : "js/[name].[contenthash].js",
       // Empty the output folder before each build
       clean: true,
@@ -321,68 +360,12 @@ export default (
         },
         {
           test: /\.module\.css$/,
-          use: [
-            {
-              loader: MiniCssExtractPlugin.loader,
-            },
-            {
-              loader: "css-loader",
-              options: {
-                // Resolve @import in CSS files
-                import: true,
-
-                // Apply "postcss-loader" on imported css files before
-                // processing them with "css-loader"
-                importLoaders: 1,
-
-                modules: {
-                  ...cssModuleOptions,
-                  mode: "local",
-                },
-              },
-            },
-            {
-              loader: "postcss-loader",
-              options: {
-                postcssOptions: {
-                  config: VB_POSTCSS_CONFIG,
-                },
-              },
-            },
-          ],
+          use: getCssLoaders({ classScope: "local", isProduction }),
         },
         {
           test: /\.css$/,
           exclude: /\.module\.css$/,
-          use: [
-            {
-              loader: MiniCssExtractPlugin.loader,
-            },
-            {
-              loader: "css-loader",
-              options: {
-                // Resolve @import in CSS files
-                import: true,
-
-                // Apply "postcss-loader" on imported css files before
-                // processing them with "css-loader"
-                importLoaders: 1,
-
-                modules: {
-                  ...cssModuleOptions,
-                  mode: "global",
-                },
-              },
-            },
-            {
-              loader: "postcss-loader",
-              options: {
-                postcssOptions: {
-                  config: VB_POSTCSS_CONFIG,
-                },
-              },
-            },
-          ],
+          use: getCssLoaders({ classScope: "global", isProduction }),
         },
         {
           test: /\.(jpg|gif|png|svg)$/,
@@ -427,7 +410,7 @@ export default (
           // Open the browser once the server starts
           open: true,
 
-          // Only this machine opens the page. `--host 0.0.0.0` exposes it to
+          // Only this machine can open the page. `--host 0.0.0.0` exposes it to
           // the network, eg. for a phone
           host: "localhost",
 
@@ -435,8 +418,8 @@ export default (
           // folder VBlocks runs in
           static: false,
 
-          // Print the URL once, as the result of serve. The startup lines of
-          // the dev server stay hidden, see infrastructureLogging
+          // Print the URL once, as the result of serve. At the `warn` log
+          // level, the dev server prints no startup lines
           onListening: developmentServer => {
             const address = developmentServer.server?.address()
 
@@ -465,8 +448,8 @@ export default (
       new HtmlWebPackPlugin({
         template: paths.htmlTemplate,
         favicon: paths.favicon,
-        // An inline script ignores `defer` and runs where it stands, so it
-        // must stand after the element the app renders into
+        // An inline script ignores `defer` and runs once the parser reaches
+        // it. It must come after the element the app renders into
         inject: isSingle ? "body" : "head",
       }),
 
@@ -515,14 +498,14 @@ export default (
     },
 
     optimization: {
-      // Enable tree shaking for unused exports
+      // Mark unused exports, so the minifier drops them
       usedExports: true,
 
       // Merge runtime.js into main.js for fewer HTTP requests
       runtimeChunk: false,
 
-      // Split node_modules into the react and vendors chunks, so a new app
-      // build keeps their cache
+      // Split node_modules into the react and vendors chunks, so the browser
+      // keeps them cached across builds of the app
       splitChunks: !isSingle && {
         chunks: "all",
         cacheGroups: {
