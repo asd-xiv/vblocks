@@ -72,6 +72,76 @@ const createCssModuleConfig = isProduction => ({
 })
 
 /**
+ * Print one line of VBlocks: a verb, then what it acted on. The tag tells it
+ * apart from the lines of Webpack
+ *
+ * @param {string} verb
+ * @param {string} subject
+ */
+const log = (verb, subject) => {
+  process.stdout.write(`[vblocks] ${verb.padEnd(7)} ${subject}\n`)
+}
+
+/**
+ * Serve prints at most this many files per compile, then a count of the rest
+ */
+const MAX_REPORTED_FILE_EVENTS = 5
+
+/**
+ * Print each file a compile in watch mode updates, adds to the build or drops,
+ * as $APP_DIR/...
+ *
+ * @param {string} appDir
+ * @returns {(compiler: import("webpack").Compiler) => void}
+ */
+const reportFileEvents = appDir => compiler => {
+  /** @type {Set<string> | undefined} */
+  let previousFiles
+  /** @type {Array<[string, string]>} */
+  let fileEvents = []
+
+  // The watcher also names editor files, and folders, eg. the src/ Tailwind
+  // scans. Only a file the last compile used is part of the build
+  compiler.hooks.watchRun.tap("VBlocksReportFileEvents", watcher => {
+    fileEvents = []
+    for (const file of watcher.modifiedFiles ?? []) {
+      if (
+        previousFiles?.has(file) &&
+        fs.statSync(file, { throwIfNoEntry: false })?.isFile()
+      ) {
+        fileEvents.push(["update", file])
+      }
+    }
+    for (const file of watcher.removedFiles ?? []) {
+      if (previousFiles?.has(file)) fileEvents.push(["drop", file])
+    }
+  })
+
+  // A file joins the build when an import first reaches it, the watcher has
+  // no event for that
+  compiler.hooks.done.tap("VBlocksReportFileEvents", stats => {
+    const files = new Set(stats.compilation.fileDependencies)
+
+    if (previousFiles) {
+      const addedFiles = [...files]
+        .filter(file => !previousFiles?.has(file))
+        .filter(file => !file.includes("/node_modules/"))
+        .toSorted()
+
+      for (const file of addedFiles) fileEvents.push(["add", file])
+    }
+    previousFiles = files
+
+    for (const [verb, file] of fileEvents.slice(0, MAX_REPORTED_FILE_EVENTS)) {
+      log(verb, file.replace(appDir, "$APP_DIR"))
+    }
+    if (fileEvents.length > MAX_REPORTED_FILE_EVENTS) {
+      log("…", `and ${fileEvents.length - MAX_REPORTED_FILE_EVENTS} more`)
+    }
+  })
+}
+
+/**
  * Replace every script, stylesheet and icon tag of the HTML with the content
  * of the file it points at, then drop that file from the output.
  *
@@ -205,6 +275,10 @@ export default (
     ],
 
     mode: mode,
+
+    // Fold the saves within 100 ms into one rebuild, eg. a codemod. A
+    // longer wait would stop an edit from feeling instant
+    watchOptions: { aggregateTimeout: 100 },
 
     // Keep the summary of VBlocks on screen. `--log-level` sets it, `--stats`
     // overrides it
@@ -369,12 +443,10 @@ export default (
             if (typeof address !== "object" || address === null) return
 
             const { port } = address
-            process.stdout.write(`Local:   http://localhost:${port}\n`)
+            log("serve", `http://localhost:${port}`)
 
             if (developmentServer.options.host !== "localhost") {
-              process.stdout.write(
-                `Network: ${developmentServer.options.host}:${port}\n`
-              )
+              log("expose", `${developmentServer.options.host}:${port}`)
             }
           },
 
@@ -421,6 +493,8 @@ export default (
       isSingle && new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
 
       isSingle && inlineAssets,
+
+      isServe && reportFileEvents(entryDir),
 
       isAnalyze &&
         new BundleAnalyzerPlugin({
