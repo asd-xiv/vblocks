@@ -340,6 +340,10 @@ export default (
           // Tells dev-server to open the browser after server had been started.
           open: true,
 
+          // Only this machine opens the page. `--host 0.0.0.0` exposes it to
+          // the network, eg. for a phone
+          host: "localhost",
+
           // Serve only what Webpack builds, not a public/ folder in the
           // folder VBlocks runs in
           static: false,
@@ -354,6 +358,12 @@ export default (
 
             const { port } = address
             process.stdout.write(`Local:   http://localhost:${port}\n`)
+
+            if (developmentServer.options.host !== "localhost") {
+              process.stdout.write(
+                `Network: ${developmentServer.options.host}:${port}\n`
+              )
+            }
           },
 
           client: {

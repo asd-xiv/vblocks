@@ -411,6 +411,7 @@ npm install
 Start the development server.
 
 - Runs at `http://localhost:8080`, or the next free port
+- Listens on this machine only, `--host 0.0.0.0` exposes it to the network
 - Opens the page in the browser
 
 ```text
