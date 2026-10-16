@@ -6,11 +6,21 @@ set -eu
 #   vblocks - Run Webpack with the configs of VBlocks, write a project or an app
 #
 # SYNOPSIS
-#   vblocks init <directory> [--template <name>] [--only <app|plumbing>]
-#   vblocks serve [--mode <mode>] [--prefix <directory>] [--analyze]
-#                 [--log-level <level>] [<webpack option>...]
-#   vblocks build [--mode <mode>] [--prefix <directory>] [--single-file]
-#                 [--log-level <level>] [<webpack option>...]
+#   vblocks init <directory>
+#     [--template <plain|xyflow>]
+#     [--only <app|plumbing>]
+#   vblocks serve
+#     [--mode <development|production>]
+#     [--prefix <directory>]
+#     [--analyze]
+#     [--log-level <error|warn|info|verbose>]
+#     [<webpack option>...]
+#   vblocks build
+#     [--mode <development|production>]
+#     [--prefix <directory>]
+#     [--single-file]
+#     [--log-level <error|warn|info|verbose>]
+#     [<webpack option>...]
 #   vblocks eject <webpack|postcss|swc>
 #   vblocks -h | --help
 #
