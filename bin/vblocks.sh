@@ -26,7 +26,8 @@ set -eu
 #             After each part, run its post-init hooks in <directory>.
 #             Print each file it adds or updates, then the next steps
 #     serve   Start the development server
-#     build   Build the app into dist/ in the app folder
+#     build   Build the app into dist/ in the app folder, then print each
+#             file in it
 #     eject   Print a default config, to save in the app folder
 #
 #   serve and build pass every option not listed under OPTIONS to Webpack.
@@ -275,7 +276,7 @@ snapshot_folder() {
     | sed 's|^\./||' \
     | LC_ALL=C sort \
     | while IFS= read -r snapshot_file; do
-      printf '%s\t%s\n' "$(cksum < "$1/$snapshot_file")" "$snapshot_file"
+      printf '%s\t%s\n' "$(cksum <"$1/$snapshot_file")" "$snapshot_file"
     done
 }
 
@@ -314,6 +315,31 @@ print_snapshot_diff() {
       }
     }
   '
+}
+
+# print_build_files <app-dir>
+#
+# Print each file in the dist/ of <app-dir> as $APP_DIR/dist/..., a tab and its
+# size, then the total size. Webpack empties dist/ before each build, so every
+# file there is from the last build.
+print_build_files() {
+  # An ejected config can write elsewhere
+  [ -d "$1/dist" ] || return 0
+
+  (cd -- "$1/dist" && find . -type f | LC_ALL=C sort) \
+    | while IFS= read -r build_file; do
+      printf '%s\t%s\n' "$(wc -c <"$1/dist/$build_file")" "${build_file#./}"
+    done \
+    | awk -F '\t' '
+      function format_size(bytes) {
+        if (bytes < 1024) return bytes " B"
+        if (bytes < 1024 * 1024) return sprintf("%.1f KiB", bytes / 1024)
+        return sprintf("%.1f MiB", bytes / 1024 / 1024)
+      }
+
+      { total += $1; printf "$APP_DIR/dist/%s\t%s\n", $2, format_size($1) }
+      END { printf "\nTotal\t%s\n", format_size(total) }
+    '
 }
 
 # print_init_summary <parts> <template> <project-dir> <app-dir>
@@ -600,11 +626,11 @@ case "$COMMAND" in
 
     case "$PARTS" in
       plumbing)
-        printf '\nNext, add an app:\n\n'
+        printf '\nNext, add an app:\n'
         printf '  npx @asd14/vblocks init %s/<app> --only app\n' "$INIT_DIR"
         ;;
       app)
-        printf '\nNext:\n\n'
+        printf '\nNext:\n'
         if [ "$PROJECT_DIR" != "$PWD" ]; then
           printf '  cd %s\n' "$(shorten_path "$PROJECT_DIR")"
         fi
@@ -612,7 +638,7 @@ case "$COMMAND" in
         printf '  npx vblocks serve --prefix %s\n' "$APP_SUBDIR"
         ;;
       *)
-        printf '\nNext:\n\n'
+        printf '\nNext:\n'
         printf '  cd %s\n' "$INIT_DIR"
         printf '  npm install\n'
         printf '  npx vblocks serve\n'
@@ -635,6 +661,8 @@ case "$COMMAND" in
     # "$@" comes later, so it overrides this one
     if [ "$COMMAND" = "build" ]; then
       run_webpack build "$APP_DIR" "$WEBPACK_CONFIG" --mode production "$@"
+      printf '\n'
+      print_build_files "$APP_DIR"
     else
       run_webpack serve "$APP_DIR" "$WEBPACK_CONFIG" --mode development "$@"
     fi
