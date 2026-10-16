@@ -10,6 +10,8 @@ import MiniCssExtractPlugin from "mini-css-extract-plugin"
 import webpack from "webpack"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 
+// `bin/vblocks.sh` sets them to the PostCSS and SWC configs it picked, the
+// app's own or the default
 const VB_SWC_CONFIG = process.env["VB_SWC_CONFIG"]
 const VB_POSTCSS_CONFIG = process.env["VB_POSTCSS_CONFIG"]
 
