@@ -17,7 +17,6 @@ import {
   type OnSelectionChangeFunc,
 } from "@xyflow/react"
 
-import { ZoomLevel } from "./ui/zoom-level"
 import { CELL_SIZE, toPixels } from "./utils/grid"
 
 type StepNode = Node<{ label: string; detail: string }, "step">
@@ -142,7 +141,6 @@ const Diagram = ({ onSelect }: DiagramProps) => {
       fitViewOptions={{ minZoom: 1, maxZoom: 1 }}>
       <Background gap={CELL_SIZE} />
       <Controls />
-      <ZoomLevel />
     </ReactFlow>
   )
 }

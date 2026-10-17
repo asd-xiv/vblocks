@@ -258,7 +258,7 @@ import { Component } from "@self/components"
 
 > [!NOTE]  
 > The [client types](src/types/client.d.ts) declare `.css`, image and font
-> imports
+> imports.
 
 ### Replace a default config
 
@@ -452,7 +452,7 @@ By default, `build`:
 - Writes a `react` chunk, and a `vendors` chunk when your other dependencies
   total over 20 KB (10 KB in `development`)
 - Inlines `jpg`, `gif`, `png` and `svg` files up to 10 KB
-- Writes larger to `dist/` with content-hashed names
+- Writes larger images to `dist/` with content-hashed names
 - Writes `woff`, `woff2`, `ttf` and `eot` files to `dist/fonts/`
 - Copies `src/public/favicon.svg` and `src/public/robots.txt` of your app, or
   the defaults of VBlocks
@@ -527,7 +527,6 @@ src/
 ├── index.tsx           # the layout: header, diagram, details panel, the selected id
 ├── diagram.tsx         # the nodes and edges, placed and sized in grid cells
 ├── details.tsx         # the panel for the selected node or edge
-├── ui/zoom-level.tsx   # the zoom level, and a Reset to 100%
 └── utils/grid.ts       # CELL_SIZE and toPixels
 ```
 
