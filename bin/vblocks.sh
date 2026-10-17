@@ -26,8 +26,8 @@ set -eu
 #
 # DESCRIPTION
 #   The app folder holds src/index.tsx and src/index.html. A config in it,
-#   webpack.config.js, postcss.config.js or .swcrc, replaces the default of
-#   VBlocks with the same name.
+#   webpack.config.js, postcss.config.js or .swcrc, replaces the VBlocks
+#   default of the same name.
 #
 #     init    Write a template into <directory>, which must be missing or
 #             empty. A template has two parts: the plumbing, which holds
@@ -37,8 +37,8 @@ set -eu
 #             Print each file it adds, updates or drops, then the next
 #             steps.
 #     serve   Start the development server
-#     build   Build the app into dist/ in the app folder, then print each
-#             file in dist/, its size and the total
+#     build   Build the app into dist/ in the app folder. Print each file
+#             in dist/, its size and the total
 #     eject   Print a default config, to save in the app folder
 #
 #   serve and build pass every option not listed under OPTIONS to Webpack.
@@ -47,8 +47,8 @@ set -eu
 #   --template <name>       init: plain, xyflow or xyflow-tabs (default: plain)
 #   --only <app|plumbing>   init: write only the app or only the plumbing.
 #                           With app, init adds the app's dependencies to
-#                           the package.json of the nearest folder above
-#                           <directory>, and exits 3 without one
+#                           the package.json in the parent folder of
+#                           <directory>. Without that file, init exits 3
 #   --mode <mode>           serve, build: the Webpack mode, development or
 #                           production (default: development for serve,
 #                           production for build)
@@ -76,8 +76,8 @@ set -eu
 # EXIT CODES
 #   0   Done
 #   2   Invalid usage, or Webpack rejected an option or the config
-#   3   Could not run: a missing tool or project, a folder init could not
-#       add, or a failed copy, hook or Webpack run
+#   3   Could not run: a missing tool or parent package.json, a folder init
+#       could not add, or a failed copy, hook or Webpack run
 #
 # SEE ALSO
 #   webpack, npm
@@ -85,6 +85,16 @@ set -eu
 # npm links the command to this file, so "$0" names the link. realpath follows
 # it to the package
 VB_DIR=$(dirname "$(dirname "$(realpath "$0")")")
+
+# tools/update-lib downloads it from @asd14/posix-utils. Never edit it here
+# shellcheck source=lib.sh
+. "$VB_DIR/bin/lib.sh"
+
+# _log reads them. VBlocks logs only errors, through _fail. The time adds no
+# fact to an error
+LOG_NAMESPACE="vblocks"
+LOG_LEVEL="info"
+NO_LOG_TIME="true"
 
 # `cd` follows an exported CDPATH and prints the folder it picked, which
 # `$(cd ... && pwd)` would capture
@@ -94,53 +104,17 @@ unset CDPATH
 # │ Settings
 # ╰───
 
-COMMAND=""           # init, serve, build or eject
-INIT_DIR=""          # init <directory>
-TEMPLATE="plain"     # init --template
-PARTS="plumbing app" # init --only, "plumbing" or "app"
-PREFIX=""            # serve/build --prefix, the app folder
-LOG_LEVEL="warn"     # serve/build --log-level, error, warn, info or verbose
-EJECT_CONFIG=""      # eject <config>
+COMMAND=""               # init, serve, build or eject
+INIT_DIR=""              # init <directory>
+TEMPLATE="plain"         # init --template
+PARTS="plumbing app"     # init --only: "plumbing", "app" or "plumbing app"
+PREFIX=""                # serve/build --prefix, the app folder
+WEBPACK_LOG_LEVEL="warn" # serve/build --log-level, error, warn, info or verbose
+EJECT_CONFIG=""          # eject <config>
 
 # ╭───
 # │ Primitives
 # ╰───
-
-# fail <code> <message>
-#
-# Print <message> to stderr, then exit with <code>.
-fail() {
-  printf 'vblocks: %s\n' "$2" >&2
-  exit "$1"
-}
-
-# show_help
-#
-# Print the man page: the comment block that starts at the NAME line.
-show_help() {
-  sed -n '/^# NAME$/,/^$/p' "$0" | sed 's/^# \{0,1\}//'
-}
-
-# require_cmd <cmd>...
-#
-# EXIT
-#   3   The shell finds no <cmd>
-require_cmd() {
-  for require_name in "$@"; do
-    command -v "$require_name" >/dev/null 2>&1 \
-      || fail 3 "$require_name is not installed"
-  done
-}
-
-# has_color <fd>
-#
-# RETURNS
-#   0   File descriptor <fd> is a terminal that shows color
-#   1   <fd> is a pipe or a file, NO_COLOR is non-empty, or TERM is dumb or
-#       unset
-has_color() {
-  [ -t "$1" ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != "dumb" ]
-}
 
 # pick_file <file> <default-file>
 #
@@ -202,32 +176,6 @@ list_templates() {
   done
 }
 
-# find_project_root <directory>
-#
-# Print the nearest folder above <directory> that holds a package.json.
-# <directory> and the folders above it need not exist yet.
-#
-# RETURNS
-#   1   No folder above <directory> holds one
-find_project_root() {
-  case "$1" in
-    /*) root_dir=$1 ;;
-    *) root_dir="$PWD/$1" ;;
-  esac
-
-  while [ "$root_dir" != "/" ]; do
-    root_dir=$(dirname "$root_dir")
-
-    if [ -f "$root_dir/package.json" ]; then
-      # Drop "." and ".." from the path. The caller compares it with `pwd`
-      (cd -- "$root_dir" && pwd)
-      return 0
-    fi
-  done
-
-  return 1
-}
-
 # init_project <directory> <template> <parts>
 #
 # For each of <parts>, copy it from <template> into <directory>, then run its
@@ -245,7 +193,7 @@ init_project() {
       [ -d "$init_source/$init_part" ] || continue
 
       cp -R -- "$init_source/$init_part/." "$init_dir" \
-        || fail 3 "Could not copy $init_source/$init_part"
+        || _fail 3 -v file "$init_source/$init_part" "Could not copy"
     done
 
     for init_source in "$VB_DIR/template/_common" "$VB_DIR/template/$init_template"; do
@@ -254,7 +202,7 @@ init_project() {
 
       # A hook reads VB_VERSION, and nothing else of this script
       (cd -- "$init_dir" && VB_VERSION="$VB_VERSION" sh "$init_hook") \
-        || fail 3 "The hook $init_hook failed"
+        || _fail 3 -v hook "$init_hook" "The hook failed"
     done
   done
 }
@@ -275,8 +223,7 @@ show_config_file() {
 #
 # Print the name and the version of VBlocks in the top border, then <title>,
 # then close the box. The lines after it hold the details. Print nothing
-# unless stdout and stderr are both terminals that show color. The header
-# holds no fact a reader acts on.
+# unless IS_TERMINAL is set. The header holds no fact a reader acts on.
 print_title_box() {
   [ -n "$IS_TERMINAL" ] || return 0
 
@@ -287,8 +234,8 @@ print_title_box() {
 
 # snapshot_folder <dir>
 #
-# Print one line per file in <dir>: its checksum, a tab, its path relative to
-# <dir>. Skip node_modules/, dist/ and .git/. init never writes there. They
+# Print one line per file in <dir>: its checksum and size, a tab, its path
+# relative to <dir>. Skip node_modules/, dist/ and .git/. init never writes there. They
 # can hold thousands of files.
 snapshot_folder() {
   (cd -- "$1" && find . \( -name node_modules -o -name dist -o -name .git \) \
@@ -381,8 +328,8 @@ print_init_summary() {
 
 # print_summary <app-dir> <webpack-config> <postcss-config> <swc-config>
 #
-# Print the header to stderr, then the app folder and the configs Webpack runs
-# with to stdout.
+# Print the header to stderr, then the app folder, the VBlocks folder and the
+# configs Webpack runs with to stdout.
 print_summary() {
   print_title_box "${BOLD}󱆃 POSIX +  Webpack, an unlikely story!${RESET}" >&2
   printf '%s\t%s\n' "${BOLD}\$APP_DIR${RESET}" "$(shorten_home "$1")"
@@ -413,16 +360,16 @@ run_webpack() {
     "$webpack_app_dir/src/public/favicon.svg" "$VB_DIR/src/public/favicon.svg")
 
   # npm echoes every npx call at notice, the level between warn and info
-  case "$LOG_LEVEL" in
+  case "$WEBPACK_LOG_LEVEL" in
     info) webpack_npm_level="notice" ;;
-    *) webpack_npm_level=$LOG_LEVEL ;;
+    *) webpack_npm_level=$WEBPACK_LOG_LEVEL ;;
   esac
 
   webpack_status=0
   npx --loglevel="$webpack_npm_level" webpack "$webpack_action" \
     --config "$webpack_config" \
     --env "entryDir=$webpack_app_dir" \
-    --env "logLevel=$LOG_LEVEL" \
+    --env "logLevel=$WEBPACK_LOG_LEVEL" \
     --env "robotsPath=$webpack_robots_file" \
     --env "faviconPath=$webpack_favicon_file" \
     "$@" || webpack_status=$?
@@ -431,8 +378,8 @@ run_webpack() {
   # config is wrong
   case "$webpack_status" in
     0) return 0 ;;
-    2) fail 2 "Webpack rejected an option or the config" ;;
-    *) fail 3 "Webpack failed" ;;
+    2) _fail 2 "Webpack rejected an option or the config" ;;
+    *) _fail 3 "Webpack failed" ;;
   esac
 }
 
@@ -442,26 +389,27 @@ run_webpack() {
 
 case "${1:-}" in
   -h | --help)
-    show_help
+    _show_help "$0"
     exit 0
     ;;
   "")
-    show_help
+    _show_help "$0"
     exit 2
     ;;
 esac
 
-require_cmd node npx
+_require_cmd node npx
 
 VB_VERSION=$(node -p 'require(process.argv[1]).version' "$VB_DIR/package.json")
 
 # Style the summary and the file lists, and show the tool icons and the header,
 # only when stdout and stderr are both terminals that show color. A pipe on
-# either one, eg. `| tee` or an agent, means plain text and only the facts
+# either one, eg. `| tee` or an agent that reads the output, means plain text
+# with only the facts
 IS_TERMINAL=""
 BOLD="" GREEN="" YELLOW="" RED="" GRAY="" RESET=""
 WEBPACK_ICON="" POSTCSS_ICON="" SWC_ICON=""
-if has_color 1 && has_color 2; then
+if _has_color 1 && _has_color 2; then
   IS_TERMINAL="true"
   BOLD=$(printf '\033[1m')
   GREEN=$(printf '\033[32m')
@@ -486,38 +434,42 @@ case "$COMMAND" in
     while [ "$#" -gt 0 ]; do
       case "$1" in
         --template)
-          [ "$#" -lt 2 ] && fail 2 "--template needs a name"
+          [ "$#" -lt 2 ] && _fail 2 -v available_templates "$(list_templates)" "--template needs a name"
+          # A template is a folder name. A slug also rules out a newline, which
+          # grep would read as a second pattern
+          _is slug "$2" \
+            || _fail 2 -v template "$2" -v available_templates "$(list_templates)" "Unknown template"
           TEMPLATE=$2
           shift 2
           ;;
         --only)
-          [ "$#" -lt 2 ] && fail 2 "--only needs a part, app or plumbing"
+          [ "$#" -lt 2 ] && _fail 2 -v available_parts "app,plumbing" "--only needs a part"
           case "$2" in
             app | plumbing) PARTS=$2 ;;
-            *) fail 2 "Unknown part \"$2\", use app or plumbing" ;;
+            *) _fail 2 -v part "$2" -v available_parts "app,plumbing" "Unknown part" ;;
           esac
           shift 2
           ;;
         --)
           shift
           if [ "$#" -ne 1 ] || [ -n "$INIT_DIR" ]; then
-            fail 2 "init takes one folder"
+            _fail 2 "init takes one folder"
           fi
           INIT_DIR=$1
           shift
           ;;
         -?*)
-          fail 2 "Unknown flag $1"
+          _fail 2 -v flag "$1" "Unknown flag"
           ;;
         *)
-          [ -n "$INIT_DIR" ] && fail 2 "init takes one folder"
+          [ -n "$INIT_DIR" ] && _fail 2 "init takes one folder"
           INIT_DIR=$1
           shift
           ;;
       esac
     done
 
-    [ -z "$INIT_DIR" ] && fail 2 "init needs a folder"
+    [ -z "$INIT_DIR" ] && _fail 2 "init needs a folder"
 
     # One shape for the printed paths: no trailing "/", and no leading "-" that
     # a command would read as a flag
@@ -531,7 +483,7 @@ case "$COMMAND" in
     # `grep -q` stops reading at the first match, and list_templates then
     # writes to a closed pipe
     if ! list_templates | grep -xF -- "$TEMPLATE" >/dev/null; then
-      fail 2 "Unknown template \"$TEMPLATE\". Available: $(list_templates | paste -sd ' ' -)"
+      _fail 2 -v template "$TEMPLATE" -v available_templates "$(list_templates)" "Unknown template"
     fi
     ;;
   serve | build)
@@ -544,30 +496,30 @@ case "$COMMAND" in
 
       case "$ARG" in
         --prefix)
-          [ "$ARG_COUNT" -eq 0 ] && fail 2 "--prefix needs a folder"
+          [ "$ARG_COUNT" -eq 0 ] && _fail 2 "--prefix needs a folder"
           PREFIX=$1
           shift
           ARG_COUNT=$((ARG_COUNT - 1))
           ;;
         --log-level)
-          [ "$ARG_COUNT" -eq 0 ] && fail 2 "--log-level needs a level"
+          [ "$ARG_COUNT" -eq 0 ] && _fail 2 -v available_levels "error,warn,info,verbose" "--log-level needs a level"
           case "$1" in
-            error | warn | info | verbose) LOG_LEVEL=$1 ;;
-            *) fail 2 "Unknown level \"$1\", use error, warn, info or verbose" ;;
+            error | warn | info | verbose) WEBPACK_LOG_LEVEL=$1 ;;
+            *) _fail 2 -v level "$1" -v available_levels "error,warn,info,verbose" "Unknown level" ;;
           esac
           shift
           ARG_COUNT=$((ARG_COUNT - 1))
           ;;
         --single-file)
-          [ "$COMMAND" = "build" ] || fail 2 "--single-file works only with build"
-          # The Webpack config does the work. An ejected config supports the
-          # flag only while it reads env.single
+          [ "$COMMAND" = "build" ] || _fail 2 "--single-file works only with build"
+          # The default Webpack config reads env.single. An ejected config
+          # supports the flag only if it reads env.single too
           set -- "$@" --env single
           ;;
         --analyze)
-          [ "$COMMAND" = "serve" ] || fail 2 "--analyze works only with serve"
-          # The Webpack config does the work. An ejected config supports the
-          # flag only while it reads env.analyze
+          [ "$COMMAND" = "serve" ] || _fail 2 "--analyze works only with serve"
+          # The default Webpack config reads env.analyze. An ejected config
+          # supports the flag only if it reads env.analyze too
           set -- "$@" --env analyze
           ;;
         *)
@@ -577,21 +529,21 @@ case "$COMMAND" in
     done
 
     if [ -n "$PREFIX" ] && [ ! -d "$PREFIX" ]; then
-      fail 2 "$PREFIX is not a folder"
+      _fail 2 -v prefix "$PREFIX" "--prefix is not a folder"
     fi
     ;;
   eject)
-    [ "$#" -ne 1 ] && fail 2 "eject needs one config: webpack, postcss or swc"
+    [ "$#" -ne 1 ] && _fail 2 -v available_configs "webpack,postcss,swc" "eject needs one config"
 
     case "$1" in
       webpack) EJECT_CONFIG="webpack.config.js" ;;
       postcss) EJECT_CONFIG="postcss.config.js" ;;
       swc) EJECT_CONFIG=".swcrc" ;;
-      *) fail 2 "Unknown config \"$1\", use webpack, postcss or swc" ;;
+      *) _fail 2 -v config "$1" -v available_configs "webpack,postcss,swc" "Unknown config" ;;
     esac
     ;;
   *)
-    fail 2 "Unknown command \"$COMMAND\", use init, serve, build or eject"
+    _fail 2 -v command "$COMMAND" -v available_commands "init,serve,build,eject" "Unknown command"
     ;;
 esac
 
@@ -603,18 +555,20 @@ case "$COMMAND" in
   init)
     if [ -e "$INIT_DIR" ]; then
       if [ ! -d "$INIT_DIR" ] || [ -n "$(ls -A -- "$INIT_DIR")" ]; then
-        fail 2 "$INIT_DIR exists and is not an empty folder"
+        _fail 2 -v folder "$INIT_DIR" "The folder exists and is not empty"
       fi
     fi
-
-    # An app needs a project folder. The app hooks write to its package.json
+    # An app lives in the project folder, its parent. The app hooks write to
+    # the package.json there
     PROJECT_DIR=""
     if [ "$PARTS" = "app" ]; then
-      PROJECT_DIR=$(find_project_root "$INIT_DIR") \
-        || fail 3 "No package.json above $INIT_DIR. Write the project first: npx @asd14/vblocks init <directory> --only plumbing"
+      PARENT_DIR=$(dirname -- "$INIT_DIR")
+      [ -f "$PARENT_DIR/package.json" ] \
+        || _fail 3 -v folder "$PARENT_DIR" -v next "npx @asd14/vblocks init <directory> --only plumbing" "No package.json in the parent folder"
+      PROJECT_DIR=$(cd -- "$PARENT_DIR" && pwd)
     fi
 
-    mkdir -p -- "$INIT_DIR" || fail 3 "Could not add $INIT_DIR"
+    mkdir -p -- "$INIT_DIR" || _fail 3 -v folder "$INIT_DIR" "Could not add the folder"
     INIT_ABS_DIR=$(cd -- "$INIT_DIR" && pwd)
 
     case "$PARTS" in

@@ -408,8 +408,8 @@ vblocks init <directory>
   - `plumbing`: `package.json`, `.gitignore`
   - `app`: `src/`, `tsconfig.json` and the template's configs. `init` adds the
     template's dependencies to the `package.json` of the
-    [project folder](#vocabulary), the nearest folder above `<directory>` with a
-    `package.json`. Without that folder, `init` fails
+    [project folder](#vocabulary), the parent of `<directory>`. Without a
+    `package.json` there, `init` fails
 
 #### `vblocks serve`
 
