@@ -75,6 +75,25 @@ declare module "*.eot" {
 }
 
 /**
+ * The MDX document as a React component. `components` replaces the element
+ * MDX renders for a tag, eg. `{ h1: Title }`.
+ *
+ * @example
+ * import Intro from "./intro.mdx"
+ *
+ * <Intro components={{ h1: Title }} />
+ */
+declare module "*.mdx" {
+  import type { ComponentType } from "react"
+
+  const MDXContent: ComponentType<{
+    components?: Record<string, ComponentType<Record<string, unknown>>>
+  }>
+
+  export default MDXContent
+}
+
+/**
  * The `.env` variables Webpack writes into the bundle. The browser has no
  * other part of Node's `process`.
  *
