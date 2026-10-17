@@ -523,7 +523,9 @@ case "$COMMAND" in
       -*) INIT_DIR="./$INIT_DIR" ;;
     esac
 
-    if ! list_templates | grep -qxF -- "$TEMPLATE"; then
+    # `grep -q` stops reading at the first match, and list_templates then
+    # writes to a closed pipe
+    if ! list_templates | grep -xF -- "$TEMPLATE" >/dev/null; then
       fail 2 "Unknown template \"$TEMPLATE\". Available: $(list_templates | paste -sd ' ' -)"
     fi
     ;;
