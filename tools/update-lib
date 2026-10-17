@@ -1,0 +1,47 @@
+#!/bin/sh
+
+set -eu
+
+# NAME
+#   update-lib - Download lib.sh of posix-utils into bin/
+#
+# SYNOPSIS
+#   update-lib
+#
+# DESCRIPTION
+#   Replaces bin/lib.sh with the one of posix-utils at LIB_VERSION. Edit
+#   LIB_VERSION below to move to another release, then review the diff of
+#   bin/lib.sh. Never edit bin/lib.sh by hand, the next update replaces it.
+#
+# EXAMPLE
+#   tools/update-lib
+#
+# EXIT CODES
+#   0   bin/lib.sh holds the pinned version
+#   3   curl is missing, or the download failed
+#
+# SEE ALSO
+#   curl, https://github.com/asd-xiv/posix-utils
+
+ROOT_DIR=$(dirname "$(dirname "$(realpath "$0")")")
+LIB_VERSION="v2.2.0" # a tag of posix-utils
+LIB_URL="https://raw.githubusercontent.com/asd-xiv/posix-utils/$LIB_VERSION/bin/lib.sh"
+
+if ! command -v curl >/dev/null 2>&1; then
+  printf 'update-lib: curl is not installed\n' >&2
+  exit 3
+fi
+
+# Download next to the target, so a failed download leaves bin/lib.sh as it was
+TEMP_FILE=$(mktemp "$ROOT_DIR/bin/lib.sh.XXXXXX")
+trap 'rm -f -- "$TEMP_FILE"' EXIT
+
+if ! curl -fsSL -- "$LIB_URL" >"$TEMP_FILE"; then
+  printf 'update-lib: could not download %s\n' "$LIB_URL" >&2
+  exit 3
+fi
+
+chmod 644 -- "$TEMP_FILE"
+mv -- "$TEMP_FILE" "$ROOT_DIR/bin/lib.sh"
+printf 'update-lib: bin/lib.sh is posix-utils %s\n' "$LIB_VERSION" >&2
+exit 0
