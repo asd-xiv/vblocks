@@ -1,5 +1,20 @@
 {
   "extends": ["@commitlint/config-conventional"],
   "rules": {
+    "scope-enum": [
+      2,
+      "always",
+      [
+        "init",
+        "serve",
+        "build",
+        "eject",
+        "bin",
+        "webpack",
+        "postcss",
+        "swc",
+        "template"
+      ]
+    ]
   }
 }
