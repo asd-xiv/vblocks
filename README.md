@@ -48,11 +48,16 @@ to write, read or fix
   - [Replace a default config](#replace-a-default-config)
   - [Style with Tailwind](#style-with-tailwind)
   - [Add VBlocks to an existing project](#add-vblocks-to-an-existing-project)
-- [Commands](#commands)
-  - [`vblocks init`](#vblocks-init)
-  - [`vblocks serve`](#vblocks-serve)
-  - [`vblocks build`](#vblocks-build)
-  - [`vblocks eject`](#vblocks-eject)
+- [References](#references)
+  - [Commands](#commands)
+    - [`vblocks init`](#vblocks-init)
+    - [`vblocks serve`](#vblocks-serve)
+    - [`vblocks build`](#vblocks-build)
+    - [`vblocks eject`](#vblocks-eject)
+  - [Templates](#templates)
+    - [`plain`](#plain)
+    - [`xyflow`](#xyflow)
+    - [`xyflow-tabs`](#xyflow-tabs)
 - [License](#license)
 
 <!-- vim-markdown-toc -->
@@ -67,23 +72,18 @@ Order this README by three principles. Each settles one decision:
 - **Colocation**, the place of a fact. A caveat sits on the step or option it
   limits, in a NOTE when it is tangential or points at another section
 
-Each section is one Diátaxis type (https://diataxis.fr): Quick Start is a
-tutorial, How to is how-to guides, Vocabulary and Commands are reference.
+Each section is one Diátaxis type (https://diataxis.fr):
+- Quick Start -> Tutorial
+- How to -> How-to guides
+- Vocabulary, Commands and Templates -> Reference
 -->
 
 ## Quick Start
 
 <!--
-Diátaxis: tutorial. The fewest steps to a working bundle. It shows enough of
-VBlocks for the reader to decide whether VBlocks fits their project.
--->
-
-<!--
 Using "scaffold", the field's word for what `init` does, eg. Yeoman and
 create-vite use it.
--->
 
-<!--
 Using the `my-vblocks-` prefix, the package name, so a reader who tries several
 scaffolders spots the folder at a glance, as with `vite-project` and
 `nuxt-app`.
@@ -149,10 +149,7 @@ Several apps, eg. demos or MVP sketches, can share one `package.json` and one
    ```diff
     sketches/
    + ├─ flow-diagram/
-   + │   ├─ src/
-   + │   │   ├─ index.tsx
-   + │   │   ├─ index.html
-   + │   │   └─ index.css
+   + │   ├─ src/          # the files of the xyflow template
    + │   ├─ postcss.config.js
    + │   └─ tsconfig.json
      ├─ .gitignore
@@ -168,24 +165,22 @@ Several apps, eg. demos or MVP sketches, can share one `package.json` and one
 ## Vocabulary
 
 <!--
-Vocabulary follows Quick Start. The reader sees the terms used, then reads
-their definitions. How to is the first section that assumes the reader knows
-them.
+Keep Vocabulary after Quick Start since the reader has no context to place
+the definitions in.
 -->
 
 | Term               | Means                                                         |
 | :----------------- | :------------------------------------------------------------ |
+| **Plumbing**       | The project files `init` writes: `package.json`, `.gitignore` |
 | **Project folder** | The folder with `package.json`                                |
 | **App folder**     | The folder with `src/index.tsx` and `src/index.html`          |
-| **Plumbing**       | The project files `init` writes: `package.json`, `.gitignore` |
 | **Bundle**         | The files `build` writes to `dist/`                           |
 
 ## How to
 
 <!--
-Diátaxis: how-to. Each ### names a pain as the task that relieves it. Order
-the guides by how early the Quick Start reader has the pain. A guide for
-another reader, eg. one with an existing app, goes last.
+Each ### names a pain as the task that relieves it. Order the guides by how
+early the Quick Start reader has the pain.
 -->
 
 ### Use environment variables
@@ -229,12 +224,12 @@ import { Component } from "@self/components"
 > The `tsconfig.json` that [`vblocks init`](#vblocks-init) writes already has
 > it. Otherwise, add:
 >
-> ```json
-> {
->   "compilerOptions": {
->     "paths": { "@self/*": ["./src/*"] }
->   }
-> }
+> ```diff
+>  {
+>    "compilerOptions": {
+> +    "paths": { "@self/*": ["./src/*"] }
+>    }
+>  }
 > ```
 
 ### Use CSS Modules
@@ -280,7 +275,8 @@ Each config in your app folder replaces the default of the same name:
 1. **[Eject](#vblocks-eject) the default into your app folder**
 
    ```sh
-   npx vblocks eject swc > flow-diagram/.swcrc
+   cd flow-diagram
+   npx vblocks eject swc > .swcrc
    ```
 
 2. **Update the ejected file**
@@ -303,7 +299,8 @@ VBlocks does not include Tailwind. Add it through a `postcss.config.js` in your
 app folder:
 
 > [!NOTE]  
-> The `xyflow` template of [`vblocks init`](#vblocks-init) has this setup.
+> The `xyflow` and `xyflow-tabs` templates of [`vblocks init`](#vblocks-init)
+> have this setup.
 
 1. **Install Tailwind and the Tailwind plugin for PostCSS**
 
@@ -363,42 +360,49 @@ app folder:
    npm install --save-dev @asd14/vblocks    # needs react and react-dom ^18 or ^19
    ```
 
-2. **Ensure `index.tsx` and `index.html` are in `src/`**
+2. **Add the [client types](src/types/client.d.ts) and the
+   [`@self`](#stop-using--everywhere) alias to your `tsconfig.json`**
+
+   ```diff
+    {
+      "compilerOptions": {
+   +    "types": ["@asd14/vblocks/client"],
+   +    "paths": { "@self/*": ["./src/*"] }
+      }
+    }
+   ```
+
+3. **Ensure `index.tsx` and `index.html` are in `src/`**
 
 > [!NOTE]  
 > VBlocks builds `dist/index.html` from `src/index.html` and adds the script and
 > stylesheet tags to it. Drop the tag that loads your entry, eg. Vite's
 > `<script type="module" src="/src/main.tsx"></script>`.
 
-3. **Start a development server**
+4. **Start a development server**
 
    ```sh
    npx vblocks serve
    ```
 
-## Commands
+## References
 
-<!--
-Diátaxis: reference. Mirror SYNOPSIS and OPTIONS of `vblocks --help`, in the
-same words. The SYNOPSIS puts one option per line, with its values, so it fits
-the width of GitHub. Below it, each option is a bullet with its default, and
-its description in sub-bullets.
--->
+### Commands
 
-### `vblocks init`
+#### `vblocks init`
 
 Write a template's plumbing, app, or both into `<directory>`.
 
 ```text
 vblocks init <directory>
-  [--template <plain|xyflow>]
+  [--template <plain|xyflow|xyflow-tabs>]
   [--only <app|plumbing>]
 ```
 
 - `<directory>`
   - The folder to write into. It must be missing or empty
 - `--template` (default: `plain`)
-  - `xyflow` adds React Flow and Tailwind
+  - The template to write, see [Templates](#templates)
 - `--only` (default: both)
   - Write one part of the template
   - `plumbing`: `package.json`, `.gitignore`
@@ -407,7 +411,7 @@ vblocks init <directory>
     [project folder](#vocabulary), the nearest folder above `<directory>` with a
     `package.json`. Without that folder, `init` fails
 
-### `vblocks serve`
+#### `vblocks serve`
 
 Start the development server.
 
@@ -438,7 +442,7 @@ vblocks serve
   - Any other [`webpack serve`](https://webpack.js.org/api/cli/) option, passed
     unchanged, eg. `--host 0.0.0.0` to listen on the network
 
-### `vblocks build`
+#### `vblocks build`
 
 Build the app into a bundle in the `dist/` of the app folder.
 
@@ -447,8 +451,8 @@ By default, `build`:
 - Writes JS and CSS files with content-hashed names
 - Writes a `react` chunk, and a `vendors` chunk when your other dependencies
   total over 20 KB (10 KB in `development`)
-- Inlines `jpg`, `gif`, `png` and `svg` files up to 10 KB, writes larger ones to
-  `dist/` with content-hashed names
+- Inlines `jpg`, `gif`, `png` and `svg` files up to 10 KB
+- Writes larger to `dist/` with content-hashed names
 - Writes `woff`, `woff2`, `ttf` and `eot` files to `dist/fonts/`
 - Copies `src/public/favicon.svg` and `src/public/robots.txt` of your app, or
   the defaults of VBlocks
@@ -480,7 +484,7 @@ vblocks build
   - Any other [`webpack build`](https://webpack.js.org/api/cli/) option, passed
     unchanged, eg. `--stats errors-only`
 
-### `vblocks eject`
+#### `vblocks eject`
 
 Print a default config to stdout.
 
@@ -491,7 +495,7 @@ vblocks eject <webpack|postcss|swc>
 - `<webpack|postcss|swc>`
   - The config to print
 
-Save the output in your app folder to
+Run it in your app folder and save the output there, to
 [replace the default](#replace-a-default-config):
 
 ```sh
@@ -499,6 +503,55 @@ npx vblocks eject webpack > webpack.config.js
 npx vblocks eject postcss > postcss.config.js
 npx vblocks eject swc > .swcrc
 ```
+
+### Templates
+
+Every app gets `src/index.html`, `src/index.css` and `tsconfig.json`. Each
+template adds its own files, and sets the `<title>` of `src/index.html`. A
+template's file replaces the common one of the same path, eg. `xyflow` has its
+own `src/index.css`.
+
+#### `plain`
+
+`src/index.tsx` renders a heading. Adds no packages.
+
+#### `xyflow`
+
+One diagram, and a details panel for the selected node or edge. Adds
+`@xyflow/react`, `tailwindcss` and `@tailwindcss/postcss` to the `package.json`
+of the project folder. Writes a `postcss.config.js` that runs Tailwind into the
+app folder.
+
+```text
+src/
+├── index.tsx           # the layout: header, diagram, details panel, the selected id
+├── diagram.tsx         # the nodes and edges, placed and sized in grid cells
+├── details.tsx         # the panel for the selected node or edge
+├── ui/zoom-level.tsx   # the zoom level, and a Reset to 100%
+└── utils/grid.ts       # CELL_SIZE and toPixels
+```
+
+To show another topic, rewrite `diagram.tsx` and `details.tsx`.
+
+#### `xyflow-tabs`
+
+One tab per diagram, each with its own details panel. Adds the same packages and
+`postcss.config.js` as `xyflow`.
+
+```text
+src/
+├── index.tsx              # the layout: header, tab bar, details panel, the selected id
+├── pages/
+│   ├── build/
+│   │   ├── diagram.tsx    # the nodes and edges of one tab, in grid cells
+│   │   └── details.tsx    # the panel for its selected node or edge
+│   └── serve/             # the same two files
+├── ui/zoom-level.tsx      # the zoom level, and a Reset to 100%
+└── utils/grid.ts          # CELL_SIZE and toPixels
+```
+
+To add a tab, add a folder in `pages/` and add it to the tab list in
+`index.tsx`.
 
 ## License
 
