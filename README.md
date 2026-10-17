@@ -506,10 +506,8 @@ npx vblocks eject swc > .swcrc
 
 ### Templates
 
-Every app gets `src/index.html`, `src/index.css` and `tsconfig.json`. Each
-template adds its own files, and sets the `<title>` of `src/index.html`. A
-template's file replaces the common one of the same path, eg. `xyflow` has its
-own `src/index.css`.
+- All templates scaffold `src/index.html`, `src/index.css` and `tsconfig.json`
+- A template adds its own files, and sets the `<title>` of `src/index.html`
 
 #### `plain`
 
@@ -517,10 +515,11 @@ own `src/index.css`.
 
 #### `xyflow`
 
-One diagram, and a details panel for the selected node or edge. Adds
-`@xyflow/react`, `tailwindcss` and `@tailwindcss/postcss` to the `package.json`
-of the project folder. Writes a `postcss.config.js` that runs Tailwind into the
-app folder.
+One diagram, and a details panel for the selected node or edge.
+
+- Adds `@xyflow/react`, `tailwindcss` and `@tailwindcss/postcss` to the
+  `package.json` of the project folder
+- Writes a `postcss.config.js` that runs Tailwind into the app folder
 
 ```text
 src/
@@ -531,12 +530,11 @@ src/
 └── utils/grid.ts       # CELL_SIZE and toPixels
 ```
 
-To show another topic, rewrite `diagram.tsx` and `details.tsx`.
-
 #### `xyflow-tabs`
 
-One tab per diagram, each with its own details panel. Adds the same packages and
-`postcss.config.js` as `xyflow`.
+One tab per diagram, each with its own details panel.
+
+- Adds the same packages and `postcss.config.js` as `xyflow`
 
 ```text
 src/
@@ -549,9 +547,6 @@ src/
 ├── ui/zoom-level.tsx      # the zoom level, and a Reset to 100%
 └── utils/grid.ts          # CELL_SIZE and toPixels
 ```
-
-To add a tab, add a folder in `pages/` and add it to the tab list in
-`index.tsx`.
 
 ## License
 
