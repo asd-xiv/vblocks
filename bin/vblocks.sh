@@ -7,7 +7,7 @@ set -eu
 #
 # SYNOPSIS
 #   vblocks init <directory>
-#     [--template <plain|xyflow>]
+#     [--template <plain|xyflow|xyflow-tabs>]
 #     [--only <app|plumbing>]
 #   vblocks serve
 #     [--mode <development|production>]
@@ -43,7 +43,7 @@ set -eu
 #   serve and build pass every option not listed under OPTIONS to Webpack.
 #
 # OPTIONS
-#   --template <name>       init: plain or xyflow (default: plain)
+#   --template <name>       init: plain, xyflow or xyflow-tabs (default: plain)
 #   --only <app|plumbing>   init: write only the app or only the plumbing.
 #                           init adds the app's dependencies to the
 #                           project folder: the nearest folder above
