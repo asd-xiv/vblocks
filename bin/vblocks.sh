@@ -3,7 +3,7 @@
 set -eu
 
 # NAME
-#   vblocks - Run Webpack with the configs of VBlocks, write a project or an app
+#   vblocks - Write a project or an app, then serve or build it with Webpack
 #
 # SYNOPSIS
 #   vblocks init <directory>
@@ -34,10 +34,11 @@ set -eu
 #             the files of the project folder, and the app. Without --only,
 #             write both.
 #             After each part, run its post-init hooks in <directory>.
-#             Print each file it adds or updates, then the next steps
+#             Print each file it adds, updates or drops, then the next
+#             steps.
 #     serve   Start the development server
 #     build   Build the app into dist/ in the app folder, then print each
-#             file in it
+#             file in dist/, its size and the total
 #     eject   Print a default config, to save in the app folder
 #
 #   serve and build pass every option not listed under OPTIONS to Webpack.
@@ -45,9 +46,9 @@ set -eu
 # OPTIONS
 #   --template <name>       init: plain, xyflow or xyflow-tabs (default: plain)
 #   --only <app|plumbing>   init: write only the app or only the plumbing.
-#                           init adds the app's dependencies to the
-#                           project folder: the nearest folder above
-#                           <directory> with a package.json
+#                           With app, init adds the app's dependencies to
+#                           the package.json of the nearest folder above
+#                           <directory>, and exits 3 without one
 #   --mode <mode>           serve, build: the Webpack mode, development or
 #                           production (default: development for serve,
 #                           production for build)
@@ -62,7 +63,8 @@ set -eu
 #   -h, --help              Print this help
 #
 # ENVIRONMENT
-#   NO_COLOR   When set and non-empty, print every summary without color
+#   NO_COLOR   When non-empty, print without color, the tool icons or the
+#              header
 #
 # EXAMPLE
 #   npx @asd14/vblocks init my-app
@@ -74,8 +76,8 @@ set -eu
 # EXIT CODES
 #   0   Done
 #   2   Invalid usage, or Webpack rejected an option or the config
-#   3   Could not run: a missing tool or project, or a failed folder, copy,
-#       hook or build
+#   3   Could not run: a missing tool or project, a folder init could not
+#       add, or a failed copy, hook or Webpack run
 #
 # SEE ALSO
 #   webpack, npm
@@ -130,13 +132,14 @@ require_cmd() {
   done
 }
 
-# has_color
+# has_color <fd>
 #
 # RETURNS
-#   0   stderr is a terminal that shows color
-#   1   It is not, NO_COLOR is non-empty, or TERM is dumb or unset
+#   0   File descriptor <fd> is a terminal that shows color
+#   1   <fd> is a pipe or a file, NO_COLOR is non-empty, or TERM is dumb or
+#       unset
 has_color() {
-  [ -t 2 ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != "dumb" ]
+  [ -t "$1" ] && [ -z "${NO_COLOR:-}" ] && [ "${TERM:-dumb}" != "dumb" ]
 }
 
 # pick_file <file> <default-file>
@@ -227,8 +230,8 @@ find_project_root() {
 
 # init_project <directory> <template> <parts>
 #
-# Copy the <parts> of <template> into <directory>, then run the hooks of each
-# part in it. <parts> is "plumbing", "app" or "plumbing app". A template's file
+# For each of <parts>, copy it from <template> into <directory>, then run its
+# hooks there. <parts> is "plumbing", "app" or "plumbing app". A template's file
 # replaces the `_common` file of the same path.
 #
 # EXIT
@@ -268,18 +271,25 @@ show_config_file() {
   esac
 }
 
-# print_title
+# print_title_box <title>
 #
-# Print the first line of a summary box: the name and the version.
-print_title() {
+# Print the name and the version of VBlocks in the top border, then <title>,
+# then close the box. The lines after it hold the details. Print nothing
+# unless stdout and stderr are both terminals that show color. The header
+# holds no fact a reader acts on.
+print_title_box() {
+  [ -n "$IS_TERMINAL" ] || return 0
+
   printf '╭───────────┤ %s\n' "${GREEN} VBlocks v${VB_VERSION}${RESET}"
+  printf '│ %s\n' "$1"
+  printf '╰──┤\n'
 }
 
 # snapshot_folder <dir>
 #
 # Print one line per file in <dir>: its checksum, a tab, its path relative to
-# <dir>. Skip node_modules/, dist/ and .git/. init never writes there, and
-# they can hold thousands of files.
+# <dir>. Skip node_modules/, dist/ and .git/. init never writes there. They
+# can hold thousands of files.
 snapshot_folder() {
   (cd -- "$1" && find . \( -name node_modules -o -name dist -o -name .git \) \
     -prune -o -type f -print) \
@@ -290,12 +300,10 @@ snapshot_folder() {
     done
 }
 
-# print_snapshot_diff <before-snapshot> <after-snapshot> <app-subdir>
+# print_snapshot_diff <before-snapshot> <after-snapshot>
 #
 # Print "add", "update" or "drop" for each file that differs between two
-# snapshots of the project folder. A path inside <app-subdir> prints as
-# $APP_DIR/..., the rest as $PROJECT_DIR/... <app-subdir> is "." when the app
-# is the project folder, empty when there is no app.
+# snapshots of the project folder, with its path relative to that folder.
 print_snapshot_diff() {
   # Every snapshot line has a tab. The AFTER line has none, so it marks where
   # the second snapshot starts
@@ -303,25 +311,25 @@ print_snapshot_diff() {
     printf '%s\n' "$1"
     printf 'AFTER\n'
     printf '%s\n' "$2"
-  } | awk -F '\t' -v app="$3" '
-    function label(path) {
-      if (app == ".") return "$APP_DIR/" path
-      if (app != "" && index(path, app "/") == 1) {
-        return "$APP_DIR/" substr(path, length(app) + 2)
-      }
-      return "$PROJECT_DIR/" path
+  } | awk -F '\t' \
+    -v add="${GREEN}add${RESET}" \
+    -v update="${YELLOW}update${RESET}" \
+    -v drop="${RED}drop${RESET}" '
+    # The color codes take no column, so pad by the plain verb
+    function verb(styled, plain) {
+      return styled substr("        ", 1, 8 - length(plain))
     }
 
     NF < 2 { is_after = 1; next }
     !is_after { before[$2] = $1; next }
     {
       seen[$2] = 1
-      if (!($2 in before)) printf "%-8s%s\n", "add", label($2)
-      else if (before[$2] != $1) printf "%-8s%s\n", "update", label($2)
+      if (!($2 in before)) printf "%s%s\n", verb(add, "add"), $2
+      else if (before[$2] != $1) printf "%s%s\n", verb(update, "update"), $2
     }
     END {
       for (path in before) {
-        if (!(path in seen)) printf "%-8s%s\n", "drop", label(path)
+        if (!(path in seen)) printf "%s%s\n", verb(drop, "drop"), path
       }
     }
   '
@@ -340,22 +348,25 @@ print_build_files() {
     | while IFS= read -r build_file; do
       printf '%s\t%s\n' "$(wc -c <"$1/dist/$build_file")" "${build_file#./}"
     done \
-    | awk -F '\t' '
+    | awk -F '\t' -v gray="$GRAY" -v bold="$BOLD" -v reset="$RESET" '
       function format_size(bytes) {
         if (bytes < 1024) return bytes " B"
         if (bytes < 1024 * 1024) return sprintf("%.1f KiB", bytes / 1024)
         return sprintf("%.1f MiB", bytes / 1024 / 1024)
       }
 
-      { total += $1; printf "$APP_DIR/dist/%s\t%s\n", $2, format_size($1) }
-      END { printf "\nTotal\t%s\n", format_size(total) }
+      {
+        total += $1
+        printf "$APP_DIR/dist/%s\t%s%s%s\n", $2, gray, format_size($1), reset
+      }
+      END { printf "\n%sTotal%s\t%s\n", bold, reset, format_size(total) }
     '
 }
 
-# print_init_summary <parts> <template> <project-dir> <app-dir>
+# print_init_summary <parts> <template> <project-dir>
 #
-# Print the version, the parts of <template> that init writes and their
-# folders, to stderr. <app-dir> is empty when init writes no app.
+# Print the header to stderr, then the project folder to stdout. The paths
+# that follow on stdout are relative to it.
 print_init_summary() {
   case "$1" in
     plumbing) summary_parts="plumbing" ;;
@@ -363,40 +374,24 @@ print_init_summary() {
     *) summary_parts="plumbing and app, $2" ;;
   esac
 
-  {
-    print_title
-    printf '│ %s\n' "init: $summary_parts"
-    printf '│\n'
-
-    # When plumbing and app share one folder, print it once, as $APP_DIR
-    if [ "$3" != "$4" ]; then
-      printf '│ %s\n' "\$PROJECT_DIR: $(shorten_home "$3")"
-    fi
-    if [ -n "$4" ]; then
-      printf '│ %s\n' "\$APP_DIR:     $(shorten_home "$4")"
-    fi
-
-    printf '╰──┤\n\n'
-  } >&2
+  print_title_box "${BOLD}init${RESET}: $summary_parts" >&2
+  printf '%s\t%s\n' "${BOLD}\$PROJECT_DIR${RESET}" "$(shorten_home "$3")"
+  printf '\n'
 }
 
 # print_summary <app-dir> <webpack-config> <postcss-config> <swc-config>
 #
-# Print the version, the app folder and the configs Webpack runs with, to
-# stderr.
+# Print the header to stderr, then the app folder and the configs Webpack runs
+# with to stdout.
 print_summary() {
-  {
-    print_title
-    printf '│ %s\n' "${BOLD}󱆃 POSIX +  Webpack, an unlikely story!${RESET}"
-    printf '│\n'
-    printf '│ %s\n' "\$APP_DIR:     $(shorten_home "$1")"
-    printf '│ %s\n' "\$VBLOCKS_DIR: ${GRAY}$(shorten_home "$VB_DIR")${RESET}"
-    printf '│\n'
-    printf '│ %s\n' " Webpack: $(show_config_file "$2" "$1")"
-    printf '│ %s\n' " PostCSS: $(show_config_file "$3" "$1")"
-    printf '│ %s\n' "󱡮 SWC: $(show_config_file "$4" "$1")"
-    printf '╰──┤\n\n'
-  } >&2
+  print_title_box "${BOLD}󱆃 POSIX +  Webpack, an unlikely story!${RESET}" >&2
+  printf '%s\t%s\n' "${BOLD}\$APP_DIR${RESET}" "$(shorten_home "$1")"
+  printf '%s\t%s\n' "${BOLD}\$VBLOCKS_DIR${RESET}" "${GRAY}$(shorten_home "$VB_DIR")${RESET}"
+  printf '\n'
+  printf '%s\t%s\n' "${WEBPACK_ICON}${BOLD}Webpack${RESET}" "$(show_config_file "$2" "$1")"
+  printf '%s\t%s\n' "${POSTCSS_ICON}${BOLD}PostCSS${RESET}" "$(show_config_file "$3" "$1")"
+  printf '%s\t%s\n' "${SWC_ICON}${BOLD}SWC${RESET}" "$(show_config_file "$4" "$1")"
+  printf '\n'
 }
 
 # run_webpack <action> <app-dir> <webpack-config> [<webpack option>...]
@@ -460,13 +455,23 @@ require_cmd node npx
 
 VB_VERSION=$(node -p 'require(process.argv[1]).version' "$VB_DIR/package.json")
 
-# Color codes for stderr, empty when it shows no color
-BOLD="" GREEN="" GRAY="" RESET=""
-if has_color; then
+# Style the summary and the file lists, and show the tool icons and the header,
+# only when stdout and stderr are both terminals that show color. A pipe on
+# either one, eg. `| tee` or an agent, means plain text and only the facts
+IS_TERMINAL=""
+BOLD="" GREEN="" YELLOW="" RED="" GRAY="" RESET=""
+WEBPACK_ICON="" POSTCSS_ICON="" SWC_ICON=""
+if has_color 1 && has_color 2; then
+  IS_TERMINAL="true"
   BOLD=$(printf '\033[1m')
   GREEN=$(printf '\033[32m')
+  YELLOW=$(printf '\033[33m')
+  RED=$(printf '\033[31m')
   GRAY=$(printf '\033[90m')
   RESET=$(printf '\033[0m')
+  WEBPACK_ICON=" "
+  POSTCSS_ICON=" "
+  SWC_ICON="󱡮 "
 fi
 
 # ╭───
@@ -633,8 +638,8 @@ case "$COMMAND" in
     init_project "$INIT_DIR" "$TEMPLATE" "$PARTS"
     AFTER_SNAPSHOT=$(snapshot_folder "$PROJECT_DIR")
 
-    print_init_summary "$PARTS" "$TEMPLATE" "$PROJECT_DIR" "$APP_DIR"
-    print_snapshot_diff "$BEFORE_SNAPSHOT" "$AFTER_SNAPSHOT" "$APP_SUBDIR"
+    print_init_summary "$PARTS" "$TEMPLATE" "$PROJECT_DIR"
+    print_snapshot_diff "$BEFORE_SNAPSHOT" "$AFTER_SNAPSHOT"
 
     case "$PARTS" in
       plumbing)
