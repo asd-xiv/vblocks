@@ -506,12 +506,13 @@ npx vblocks eject swc > .swcrc
 
 ### Templates
 
-- All templates scaffold `src/index.html`, `src/index.css` and `tsconfig.json`
-- A template adds its own files, and sets the `<title>` of `src/index.html`
+All templates scaffold `src/index.html`, `src/index.css` and `tsconfig.json`.
 
 #### `plain`
 
-`src/index.tsx` renders a heading. Adds no packages.
+"Hello World!" in `src/index.tsx`.
+
+- Adds no packages
 
 #### `xyflow`
 
@@ -519,7 +520,7 @@ One diagram, and a details panel for the selected node or edge.
 
 - Adds `@xyflow/react`, `tailwindcss` and `@tailwindcss/postcss` to the
   `package.json` of the project folder
-- Writes a `postcss.config.js` that runs Tailwind into the app folder
+- Writes a `postcss.config.js` that configures Tailwind
 
 ```text
 src/
