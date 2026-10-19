@@ -24,7 +24,7 @@ set -eu
 #   curl, https://github.com/asd-xiv/posix-utils
 
 ROOT_DIR=$(dirname "$(dirname "$(realpath "$0")")")
-LIB_VERSION="v2.2.0" # a tag of posix-utils
+LIB_VERSION="v2.4.0" # a tag of posix-utils
 LIB_URL="https://raw.githubusercontent.com/asd-xiv/posix-utils/$LIB_VERSION/bin/lib.sh"
 
 if ! command -v curl >/dev/null 2>&1; then
