@@ -116,10 +116,10 @@ _EJECT_CONFIG=""      # eject <config>
 # │ Primitives
 # ╰───
 
-# pick_file <file> <default-file>
+# _pick_file <file> <default-file>
 #
 # Print <file> when it exists, otherwise <default-file>.
-pick_file() {
+_pick_file() {
   if [ -f "$1" ]; then
     printf '%s\n' "$1"
   else
@@ -127,10 +127,10 @@ pick_file() {
   fi
 }
 
-# shorten_home <path>
+# _shorten_home <path>
 #
 # Print <path> with the home folder as "~".
-shorten_home() {
+_shorten_home() {
   if [ -n "${HOME:-}" ]; then
     case "$1" in
       "$HOME"/*)
@@ -144,15 +144,15 @@ shorten_home() {
   printf '%s\n' "$1"
 }
 
-# shorten_path <absolute-path>
+# _shorten_path <absolute-path>
 #
 # Print <absolute-path> relative to the current folder when it is inside it,
 # otherwise with the home folder as "~".
-shorten_path() {
+_shorten_path() {
   case "$1" in
     "$PWD") printf '.\n' ;;
     "$PWD"/*) printf '%s\n' "${1#"$PWD"/}" ;;
-    *) shorten_home "$1" ;;
+    *) _shorten_home "$1" ;;
   esac
 }
 
@@ -160,11 +160,11 @@ shorten_path() {
 # │ Domain primitives
 # ╰───
 
-# list_templates
+# _list_templates
 #
 # Print the template names, one per line. A template is a folder in
 # `template/` whose name has no `_` prefix.
-list_templates() {
+_list_templates() {
   for lt_dir in "$_VB_DIR"/template/*/; do
     [ -d "$lt_dir" ] || continue
     lt_name=$(basename "$lt_dir")
@@ -176,7 +176,7 @@ list_templates() {
   done
 }
 
-# init_project <directory> <template> <parts>
+# _init_project <directory> <template> <parts>
 #
 # For each of <parts>, copy it from <template> into <directory>, then run its
 # hooks there. <parts> is "plumbing", "app" or "plumbing app". A template's file
@@ -184,7 +184,7 @@ list_templates() {
 #
 # EXIT
 #   3   A copy or a hook failed
-init_project() {
+_init_project() {
   ip_dir=$1
   ip_template=$2
 
@@ -207,11 +207,11 @@ init_project() {
   done
 }
 
-# show_config_file <config-file> <app-dir>
+# _show_config_file <config-file> <app-dir>
 #
 # Print <config-file> with its folder as $APP_DIR, or as $VBLOCKS_DIR in
 # gray for a default config.
-show_config_file() {
+_show_config_file() {
   case "$1" in
     "$2"/*) printf '%s\n' "\$APP_DIR/${1#"$2"/}" ;;
     "$_VB_DIR"/*) printf '%s\n' "${_GRAY}\$VBLOCKS_DIR/${1#"$_VB_DIR"/}${_RESET}" ;;
@@ -219,12 +219,12 @@ show_config_file() {
   esac
 }
 
-# print_title_box <title>
+# _print_title_box <title>
 #
 # Print the name and the version of VBlocks in the top border, then <title>,
 # then close the box. The lines after it hold the details. Print nothing
 # unless _IS_TERMINAL is set. The header holds no fact a reader acts on.
-print_title_box() {
+_print_title_box() {
   [ -n "$_IS_TERMINAL" ] || return 0
 
   printf '╭───────────┤ %s\n' "${_GREEN} VBlocks v${_VB_VERSION}${_RESET}"
@@ -232,12 +232,12 @@ print_title_box() {
   printf '╰──┤\n'
 }
 
-# snapshot_folder <dir>
+# _snapshot_folder <dir>
 #
 # Print one line per file in <dir>: its checksum and size, a tab, its path
 # relative to <dir>. Skip node_modules/, dist/ and .git/. init never writes there. They
 # can hold thousands of files.
-snapshot_folder() {
+_snapshot_folder() {
   (cd -- "$1" && find . \( -name node_modules -o -name dist -o -name .git \) \
     -prune -o -type f -print) \
     | sed 's|^\./||' \
@@ -247,11 +247,11 @@ snapshot_folder() {
     done
 }
 
-# print_snapshot_diff <before-snapshot> <after-snapshot>
+# _print_snapshot_diff <before-snapshot> <after-snapshot>
 #
 # Print "add", "update" or "drop" for each file that differs between two
 # snapshots of the project folder, with its path relative to that folder.
-print_snapshot_diff() {
+_print_snapshot_diff() {
   # Every snapshot line has a tab. The AFTER line has none, so it marks where
   # the second snapshot starts
   {
@@ -282,12 +282,12 @@ print_snapshot_diff() {
   '
 }
 
-# print_build_files <app-dir>
+# _print_build_files <app-dir>
 #
 # Print each file in the dist/ of <app-dir> as $APP_DIR/dist/..., a tab and its
 # size, then the total size. Webpack empties dist/ before each build, so every
 # file there is from the last build.
-print_build_files() {
+_print_build_files() {
   # An ejected config can write elsewhere
   [ -d "$1/dist" ] || return 0
 
@@ -310,53 +310,53 @@ print_build_files() {
     '
 }
 
-# print_init_summary <parts> <template> <project-dir>
+# _print_init_summary <parts> <template> <project-dir>
 #
 # Print the header to stderr, then the project folder to stdout. The paths
 # that follow on stdout are relative to it.
-print_init_summary() {
+_print_init_summary() {
   case "$1" in
     plumbing) pis_parts="plumbing" ;;
     app) pis_parts="app, $2" ;;
     *) pis_parts="plumbing and app, $2" ;;
   esac
 
-  print_title_box "${_BOLD}init${_RESET}: $pis_parts" >&2
-  printf '%s\t%s\n' "${_BOLD}\$PROJECT_DIR${_RESET}" "$(shorten_home "$3")"
+  _print_title_box "${_BOLD}init${_RESET}: $pis_parts" >&2
+  printf '%s\t%s\n' "${_BOLD}\$PROJECT_DIR${_RESET}" "$(_shorten_home "$3")"
   printf '\n'
 }
 
-# print_summary <app-dir> <webpack-config> <postcss-config> <swc-config>
+# _print_summary <app-dir> <webpack-config> <postcss-config> <swc-config>
 #
 # Print the header to stderr, then the app folder, the VBlocks folder and the
 # configs Webpack runs with to stdout.
-print_summary() {
-  print_title_box "${_BOLD}󱆃 POSIX +  Webpack, an unlikely story!${_RESET}" >&2
-  printf '%s\t%s\n' "${_BOLD}\$APP_DIR${_RESET}" "$(shorten_home "$1")"
-  printf '%s\t%s\n' "${_BOLD}\$VBLOCKS_DIR${_RESET}" "${_GRAY}$(shorten_home "$_VB_DIR")${_RESET}"
+_print_summary() {
+  _print_title_box "${_BOLD}󱆃 POSIX +  Webpack, an unlikely story!${_RESET}" >&2
+  printf '%s\t%s\n' "${_BOLD}\$APP_DIR${_RESET}" "$(_shorten_home "$1")"
+  printf '%s\t%s\n' "${_BOLD}\$VBLOCKS_DIR${_RESET}" "${_GRAY}$(_shorten_home "$_VB_DIR")${_RESET}"
   printf '\n'
-  printf '%s\t%s\n' "${_WEBPACK_ICON}${_BOLD}Webpack${_RESET}" "$(show_config_file "$2" "$1")"
-  printf '%s\t%s\n' "${_POSTCSS_ICON}${_BOLD}PostCSS${_RESET}" "$(show_config_file "$3" "$1")"
-  printf '%s\t%s\n' "${_SWC_ICON}${_BOLD}SWC${_RESET}" "$(show_config_file "$4" "$1")"
+  printf '%s\t%s\n' "${_WEBPACK_ICON}${_BOLD}Webpack${_RESET}" "$(_show_config_file "$2" "$1")"
+  printf '%s\t%s\n' "${_POSTCSS_ICON}${_BOLD}PostCSS${_RESET}" "$(_show_config_file "$3" "$1")"
+  printf '%s\t%s\n' "${_SWC_ICON}${_BOLD}SWC${_RESET}" "$(_show_config_file "$4" "$1")"
   printf '\n'
 }
 
-# run_webpack <action> <app-dir> <webpack-config> [<webpack option>...]
+# _run_webpack <action> <app-dir> <webpack-config> [<webpack option>...]
 #
 # Run `webpack <action>` for the app in <app-dir>.
 #
 # EXIT
 #   2   Webpack rejected an option or the config
 #   3   Webpack failed
-run_webpack() {
+_run_webpack() {
   rw_action=$1
   rw_app_dir=$2
   rw_config=$3
   shift 3
 
-  rw_robots_file=$(pick_file \
+  rw_robots_file=$(_pick_file \
     "$rw_app_dir/src/public/robots.txt" "$_VB_DIR/src/public/robots.txt")
-  rw_favicon_file=$(pick_file \
+  rw_favicon_file=$(_pick_file \
     "$rw_app_dir/src/public/favicon.svg" "$_VB_DIR/src/public/favicon.svg")
 
   # Each tool gets the --log-level in its own words. npm echoes every npx call
@@ -437,11 +437,11 @@ case "$_COMMAND" in
     while [ "$#" -gt 0 ]; do
       case "$1" in
         --template)
-          [ "$#" -lt 2 ] && _fail 2 -v available_templates "$(list_templates)" "--template needs a name"
+          [ "$#" -lt 2 ] && _fail 2 -v available_templates "$(_list_templates)" "--template needs a name"
           # A template is a folder name. A slug also rules out a newline, which
           # grep would read as a second pattern
           _is slug "$2" \
-            || _fail 2 -v template "$2" -v available_templates "$(list_templates)" "Unknown template"
+            || _fail 2 -v template "$2" -v available_templates "$(_list_templates)" "Unknown template"
           _TEMPLATE=$2
           shift 2
           ;;
@@ -483,10 +483,10 @@ case "$_COMMAND" in
       -*) _INIT_DIR="./$_INIT_DIR" ;;
     esac
 
-    # `grep -q` stops reading at the first match, and list_templates then
+    # `grep -q` stops reading at the first match, and _list_templates then
     # writes to a closed pipe
-    if ! list_templates | grep -xF -- "$_TEMPLATE" >/dev/null; then
-      _fail 2 -v template "$_TEMPLATE" -v available_templates "$(list_templates)" "Unknown template"
+    if ! _list_templates | grep -xF -- "$_TEMPLATE" >/dev/null; then
+      _fail 2 -v template "$_TEMPLATE" -v available_templates "$(_list_templates)" "Unknown template"
     fi
     ;;
   serve | build)
@@ -591,12 +591,12 @@ case "$_COMMAND" in
         ;;
     esac
 
-    _BEFORE_SNAPSHOT=$(snapshot_folder "$_PROJECT_DIR")
-    init_project "$_INIT_DIR" "$_TEMPLATE" "$_PARTS"
-    _AFTER_SNAPSHOT=$(snapshot_folder "$_PROJECT_DIR")
+    _BEFORE_SNAPSHOT=$(_snapshot_folder "$_PROJECT_DIR")
+    _init_project "$_INIT_DIR" "$_TEMPLATE" "$_PARTS"
+    _AFTER_SNAPSHOT=$(_snapshot_folder "$_PROJECT_DIR")
 
-    print_init_summary "$_PARTS" "$_TEMPLATE" "$_PROJECT_DIR"
-    print_snapshot_diff "$_BEFORE_SNAPSHOT" "$_AFTER_SNAPSHOT"
+    _print_init_summary "$_PARTS" "$_TEMPLATE" "$_PROJECT_DIR"
+    _print_snapshot_diff "$_BEFORE_SNAPSHOT" "$_AFTER_SNAPSHOT"
 
     case "$_PARTS" in
       plumbing)
@@ -606,7 +606,7 @@ case "$_COMMAND" in
       app)
         printf '\nNext:\n'
         if [ "$_PROJECT_DIR" != "$PWD" ]; then
-          printf '  cd %s\n' "$(shorten_path "$_PROJECT_DIR")"
+          printf '  cd %s\n' "$(_shorten_path "$_PROJECT_DIR")"
         fi
         printf '  npm install\n'
         printf '  npx vblocks serve --prefix %s\n' "$_APP_SUBDIR"
@@ -622,23 +622,23 @@ case "$_COMMAND" in
     ;;
   serve | build)
     _APP_DIR=$(cd -- "${_PREFIX_DIR:-.}" && pwd)
-    _WEBPACK_CONFIG=$(pick_file "$_APP_DIR/webpack.config.js" "$_VB_DIR/src/webpack.config.js")
+    _WEBPACK_CONFIG=$(_pick_file "$_APP_DIR/webpack.config.js" "$_VB_DIR/src/webpack.config.js")
 
     # webpack.config.js reads them
-    VB_POSTCSS_CONFIG=$(pick_file "$_APP_DIR/postcss.config.js" "$_VB_DIR/src/postcss.config.js")
-    VB_SWC_CONFIG=$(pick_file "$_APP_DIR/.swcrc" "$_VB_DIR/src/.swcrc")
+    VB_POSTCSS_CONFIG=$(_pick_file "$_APP_DIR/postcss.config.js" "$_VB_DIR/src/postcss.config.js")
+    VB_SWC_CONFIG=$(_pick_file "$_APP_DIR/.swcrc" "$_VB_DIR/src/.swcrc")
     export VB_POSTCSS_CONFIG VB_SWC_CONFIG
 
-    print_summary "$_APP_DIR" "$_WEBPACK_CONFIG" "$VB_POSTCSS_CONFIG" "$VB_SWC_CONFIG"
+    _print_summary "$_APP_DIR" "$_WEBPACK_CONFIG" "$VB_POSTCSS_CONFIG" "$VB_SWC_CONFIG"
 
     # Without a mode, Webpack takes `production`, also for `serve`. A --mode in
     # "$@" comes later, so it overrides this one
     if [ "$_COMMAND" = "build" ]; then
-      run_webpack build "$_APP_DIR" "$_WEBPACK_CONFIG" --mode production "$@"
+      _run_webpack build "$_APP_DIR" "$_WEBPACK_CONFIG" --mode production "$@"
       printf '\n'
-      print_build_files "$_APP_DIR"
+      _print_build_files "$_APP_DIR"
     else
-      run_webpack serve "$_APP_DIR" "$_WEBPACK_CONFIG" --mode development "$@"
+      _run_webpack serve "$_APP_DIR" "$_WEBPACK_CONFIG" --mode development "$@"
     fi
     exit 0
     ;;
