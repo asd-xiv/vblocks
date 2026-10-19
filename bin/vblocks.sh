@@ -57,8 +57,8 @@ set -eu
 #   --single-file           build: one standalone dist/index.html, every
 #                           asset inlined
 #   --analyze               serve: run the bundle analyzer, on a free port
-#   --log-level <level>     serve, build: how much Webpack, its dev server and
-#                           npm print: error, warn, info or verbose (default:
+#   --log-level <level>     serve, build: how much Webpack and its dev server
+#                           print: error, warn, info or verbose (default:
 #                           warn)
 #   -h, --help              Print this help
 #
@@ -359,20 +359,20 @@ _run_webpack() {
   rw_favicon_file=$(_pick_file \
     "$rw_app_dir/src/public/favicon.svg" "$_VB_DIR/src/public/favicon.svg")
 
-  # Each tool gets the --log-level in its own words. npm echoes every npx call
-  # at notice, the level between warn and info. The Webpack config takes the
-  # VBlocks levels, and maps them to its stats and infrastructureLogging
-  case "$_LOG_LEVEL" in
-    info) rw_npm_level="notice" ;;
-    *) rw_npm_level=$_LOG_LEVEL ;;
-  esac
-  rw_webpack_level=$_LOG_LEVEL
+  # Run the webpack-cli of VBlocks, the version it ships and tests with. npx
+  # would run the first one it finds from the current folder, or offer to
+  # install one
+  rw_cli_file=$(node -p \
+    'require.resolve("webpack-cli/bin/cli.js", { paths: [process.argv[1]] })' \
+    "$_VB_DIR") || _fail 3 "Could not find the webpack-cli of VBlocks"
 
   rw_status=0
-  npx --loglevel="$rw_npm_level" webpack "$rw_action" \
+  # The Webpack config takes the levels of --log-level, and maps them to its
+  # stats and infrastructureLogging
+  node "$rw_cli_file" "$rw_action" \
     --config "$rw_config" \
     --env "entryDir=$rw_app_dir" \
-    --env "logLevel=$rw_webpack_level" \
+    --env "logLevel=$_LOG_LEVEL" \
     --env "robotsPath=$rw_robots_file" \
     --env "faviconPath=$rw_favicon_file" \
     "$@" || rw_status=$?
@@ -401,7 +401,7 @@ case "${1:-}" in
     ;;
 esac
 
-_require_cmd node npx
+_require_cmd node
 
 _VB_VERSION=$(node -p 'require(process.argv[1]).version' "$_VB_DIR/package.json")
 

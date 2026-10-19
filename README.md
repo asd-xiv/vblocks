@@ -437,7 +437,7 @@ vblocks serve
 - `--analyze`
   - Run the bundle analyzer, on a free port
 - `--log-level` (default: `warn`)
-  - How much Webpack, its development server and npm print
+  - How much Webpack and its development server print
 - `<webpack option>...`
   - Any other [`webpack serve`](https://webpack.js.org/api/cli/) option, passed
     unchanged, eg. `--host 0.0.0.0` to listen on the network
@@ -479,7 +479,7 @@ vblocks build
   - Keep the route in the URL hash
     - On `file://`, `history.pushState` to another path throws
 - `--log-level` (default: `warn`)
-  - How much Webpack and npm print
+  - How much Webpack prints
 - `<webpack option>...`
   - Any other [`webpack build`](https://webpack.js.org/api/cli/) option, passed
     unchanged, eg. `--stats errors-only`
