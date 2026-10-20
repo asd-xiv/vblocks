@@ -206,8 +206,8 @@ variable your code does not read.
 > the page can read it.
 
 > [!NOTE]  
-> The [client types](types/client.d.ts) declare `process.env` and nothing
-> else from Node, because Webpack replaces nothing else.
+> The [client types](types/client.d.ts) declare `process.env` and nothing else
+> from Node, because Webpack replaces nothing else.
 
 ### Stop using `../../../` everywhere
 
@@ -257,8 +257,7 @@ import { Component } from "@self/components"
   `development` mode
 
 > [!NOTE]  
-> The [client types](types/client.d.ts) declare `.css`, image and font
-> imports.
+> The [client types](types/client.d.ts) declare `.css`, image and font imports.
 
 ### Replace a default config
 
@@ -457,7 +456,7 @@ By default, `build`:
 vblocks build
   [--mode <development|production>]
   [--prefix <directory>]
-  [--single-file]
+  [--single-file|--single]
   [--log-level <error|warn|info|verbose>]
   [-- <webpack option>...]
 ```
@@ -468,7 +467,7 @@ vblocks build
     config, CSS
 - `--prefix` (default: the current folder)
   - The [app folder](#vocabulary), which must exist
-- `--single-file`
+- `--single-file|--single`
   - Write one standalone `dist/index.html`, every asset inlined
   - A browser opens the file from disk, with no server and no network
   - The bundle has no `robots.txt`

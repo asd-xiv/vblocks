@@ -54,7 +54,8 @@ set -eu
 #                           production for build)
 #   --prefix <directory>    serve, build: the app folder (default: the
 #                           current folder)
-#   --single-file           build: one standalone dist/index.html, every
+#   --single-file, --single
+#                           build: one standalone dist/index.html, every
 #                           asset inlined
 #   --analyze               serve: run the bundle analyzer, on a free port
 #   --log-level <level>     serve, build: how much Webpack and its dev server
