@@ -476,6 +476,7 @@ export default (
       }),
 
       !isSingle &&
+        paths.robots &&
         new CopyPlugin({
           patterns: [
             {
