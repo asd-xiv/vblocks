@@ -35,6 +35,19 @@ _guard_log_level() {
   esac
 }
 
+# _guard_mode <mode>
+#
+# EXIT
+#   2   <mode> is empty or not one of --mode: development or production
+_guard_mode() {
+  gm_modes="development,production"
+  case "$1" in
+    development | production) ;;
+    "") _fail 2 -v available_modes "$gm_modes" "--mode needs a mode" ;;
+    *) _fail 2 -v mode "$1" -v available_modes "$gm_modes" "Unknown mode" ;;
+  esac
+}
+
 # _pick_config <app-dir> <file>
 #
 # Print <file> in <app-dir> when it exists, otherwise the default of VBlocks in

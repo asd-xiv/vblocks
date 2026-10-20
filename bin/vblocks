@@ -14,13 +14,13 @@ set -eu
 #     [--prefix <directory>]
 #     [--analyze]
 #     [--log-level <error|warn|info|verbose>]
-#     [<webpack option>...]
+#     [-- <webpack option>...]
 #   vblocks build
 #     [--mode <development|production>]
 #     [--prefix <directory>]
 #     [--single-file]
 #     [--log-level <error|warn|info|verbose>]
-#     [<webpack option>...]
+#     [-- <webpack option>...]
 #   vblocks eject <webpack|postcss|swc>
 #   vblocks -h | --help
 #
@@ -41,7 +41,7 @@ set -eu
 #             in dist/, its size and the total
 #     eject   Print a default config, to save in the app folder
 #
-#   serve and build pass every option not listed under OPTIONS to Webpack.
+#   serve and build pass every option after -- to Webpack, unchanged.
 #
 # OPTIONS
 #   --template <name>       init: plain, xyflow or xyflow-tabs (default: plain)
@@ -71,6 +71,7 @@ set -eu
 #   npx @asd14/vblocks init demos --only plumbing
 #   npx @asd14/vblocks init demos/flow --template xyflow --only app
 #   cd demos && npx vblocks build --prefix flow --single-file
+#   npx vblocks serve -- --host 0.0.0.0
 #   npx vblocks eject postcss > postcss.config.js
 #
 # EXIT CODES

@@ -426,7 +426,7 @@ vblocks serve
   [--prefix <directory>]
   [--analyze]
   [--log-level <error|warn|info|verbose>]
-  [<webpack option>...]
+  [-- <webpack option>...]
 ```
 
 - `--mode` (default: `development`)
@@ -438,9 +438,10 @@ vblocks serve
   - Run the bundle analyzer, on a free port
 - `--log-level` (default: `warn`)
   - How much Webpack and its development server print
-- `<webpack option>...`
-  - Any other [`webpack serve`](https://webpack.js.org/api/cli/) option, passed
-    unchanged, eg. `--host 0.0.0.0` to listen on the network
+- `-- <webpack option>...`
+  - Any [`webpack serve`](https://webpack.js.org/api/cli/) option
+  - `serve` passes each one to Webpack unchanged
+  - eg. `-- --host 0.0.0.0`, to listen on the network
 
 #### `vblocks build`
 
@@ -463,7 +464,7 @@ vblocks build
   [--prefix <directory>]
   [--single-file]
   [--log-level <error|warn|info|verbose>]
-  [<webpack option>...]
+  [-- <webpack option>...]
 ```
 
 - `--mode` (default: `production`)
@@ -480,9 +481,10 @@ vblocks build
     - On `file://`, `history.pushState` to another path throws
 - `--log-level` (default: `warn`)
   - How much Webpack prints
-- `<webpack option>...`
-  - Any other [`webpack build`](https://webpack.js.org/api/cli/) option, passed
-    unchanged, eg. `--stats errors-only`
+- `-- <webpack option>...`
+  - Any [`webpack build`](https://webpack.js.org/api/cli/) option
+  - `build` passes each one to Webpack unchanged
+  - eg. `-- --devtool source-map`, to write source maps
 
 #### `vblocks eject`
 

@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# vblocks build [OPTIONS] [<webpack option>...]
+# vblocks build [OPTIONS] [-- <webpack option>...]
 #
 # Build the app into dist/ in the app folder, then print
 # each file in it. vblocks runs this file. Never call it directly.
@@ -17,8 +17,10 @@ _SCRIPT_DIR=$(dirname "$0")
 # │ Settings
 # ╰───
 
-_PREFIX_DIR=""    # --prefix, the app folder
-_LOG_LEVEL="warn" # --log-level: error, warn, info or verbose
+_PREFIX_DIR=""     # --prefix, the app folder
+_MODE="production" # --mode: development or production
+_LOG_LEVEL="warn"  # --log-level: error, warn, info or verbose
+_IS_SINGLE_FILE="" # --single-file, "true" or ""
 
 # ╭───
 # │ Domain primitives
@@ -56,37 +58,39 @@ _print_build_files() {
 # │ Flags and positionals
 # ╰───
 
-# Take the flags of VBlocks out of the arguments. Webpack gets the rest
-_ARG_COUNT=$#
-while [ "$_ARG_COUNT" -gt 0 ]; do
-  _ARG=$1
-  shift
-  _ARG_COUNT=$((_ARG_COUNT - 1))
-
-  case "$_ARG" in
+while [ "$#" -gt 0 ]; do
+  case "$1" in
     --prefix)
-      [ "$_ARG_COUNT" -eq 0 ] && _fail 2 "--prefix needs a folder"
-      _PREFIX_DIR=$1
-      shift
-      _ARG_COUNT=$((_ARG_COUNT - 1))
+      [ "$#" -lt 2 ] && _fail 2 "--prefix needs a folder"
+      _PREFIX_DIR=$2
+      shift 2
+      ;;
+    --mode)
+      _guard_mode "${2:-}"
+      _MODE=$2
+      shift 2
       ;;
     --log-level)
-      [ "$_ARG_COUNT" -eq 0 ] && _guard_log_level ""
-      _guard_log_level "$1"
-      _LOG_LEVEL=$1
-      shift
-      _ARG_COUNT=$((_ARG_COUNT - 1))
+      _guard_log_level "${2:-}"
+      _LOG_LEVEL=$2
+      shift 2
       ;;
     --single-file)
-      # The default Webpack config reads env.single. An ejected config
-      # supports the flag only if it reads env.single too
-      set -- "$@" --env single
+      _IS_SINGLE_FILE="true"
+      shift
       ;;
     --analyze)
       _fail 2 "--analyze works only with serve"
       ;;
+    --)
+      shift
+      break
+      ;;
+    -?*)
+      _fail 2 -v flag "$1" "Unknown flag. For Webpack options, place them after --"
+      ;;
     *)
-      set -- "$@" "$_ARG"
+      _fail 2 -v argument "$1" "build takes no positional"
       ;;
   esac
 done
@@ -110,8 +114,10 @@ _export_configs "$_APP_DIR"
 _print_header "$VB_VERSION" "$VB_DESCRIPTION" >&2
 _print_summary "$_APP_DIR" "$_WEBPACK_CONFIG" "$VB_POSTCSS_CONFIG" "$VB_SWC_CONFIG"
 
-# A --mode in "$@" comes later, so it overrides this one
-_run_webpack build "$_APP_DIR" "$_WEBPACK_CONFIG" "$_LOG_LEVEL" --mode production "$@"
+# The default Webpack config reads env.single. An ejected config supports
+# --single-file only if it reads env.single too
+_run_webpack build "$_APP_DIR" "$_WEBPACK_CONFIG" "$_LOG_LEVEL" \
+  --mode "$_MODE" ${_IS_SINGLE_FILE:+--env single} "$@"
 printf '\n'
 _print_build_files "$_APP_DIR"
 exit 0
