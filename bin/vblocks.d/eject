@@ -34,5 +34,5 @@ esac
 # │ Main
 # ╰───
 
-cat -- "$_VB_DIR/src/$_EJECT_CONFIG"
+cat -- "$_VB_DIR/defaults/$_EJECT_CONFIG"
 exit 0

@@ -1,6 +1,6 @@
 import { tsConfig, commonIgnores } from "@asd14/eslint-config/ts"
 
-const SRC_FILES = ["src/**/*.js", "bin/**/*.js"]
+const SRC_FILES = ["defaults/**/*.js", "bin/**/*.js"]
 const TEST_FILES = ["src/**/*.test.ts"]
 const DEV_FILES = ["eslint.config.js"]
 

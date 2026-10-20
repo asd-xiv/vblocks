@@ -1,22 +1,7 @@
 #!/bin/sh
 
-# webpack.sh - The primitives of serve and build: the --log-level guard, the
-# configs, the summary and the Webpack run
-
-# ╭───
-# │ Primitives
-# ╰───
-
-# _pick_file <file> <default-file>
-#
-# Print <file> when it exists, otherwise <default-file>.
-_pick_file() {
-  if [ -f "$1" ]; then
-    printf '%s\n' "$1"
-  else
-    printf '%s\n' "$2"
-  fi
-}
+# webpack.sh - The primitives of serve and build: the --mode and --log-level
+# guards, the defaults, the summary and the Webpack run
 
 # ╭───
 # │ Domain primitives
@@ -48,12 +33,17 @@ _guard_mode() {
   esac
 }
 
-# _pick_config <app-dir> <file>
+# _pick_file <app-dir> <path>
 #
-# Print <file> in <app-dir> when it exists, otherwise the default of VBlocks in
-# src/.
-_pick_config() {
-  _pick_file "$1/$2" "$_VB_DIR/src/$2"
+# Print <path> in <app-dir> when the file exists, otherwise the default of
+# VBlocks at the same <path> in defaults/. defaults/ is laid out like an app
+# folder.
+_pick_file() {
+  if [ -f "$1/$2" ]; then
+    printf '%s\n' "$1/$2"
+  else
+    printf '%s\n' "$_VB_DIR/defaults/$2"
+  fi
 }
 
 # _print_file_path <file> <app-dir>

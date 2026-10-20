@@ -108,18 +108,16 @@ _export_version
 # ╰───
 
 _APP_DIR=$(cd -- "${_PREFIX_DIR:-.}" && pwd)
-_WEBPACK_CONFIG=$(_pick_config "$_APP_DIR" webpack.config.js)
-_POSTCSS_CONFIG=$(_pick_config "$_APP_DIR" postcss.config.js)
-_SWC_CONFIG=$(_pick_config "$_APP_DIR" .swcrc)
+_WEBPACK_CONFIG=$(_pick_file "$_APP_DIR" webpack.config.js)
+_POSTCSS_CONFIG=$(_pick_file "$_APP_DIR" postcss.config.js)
+_SWC_CONFIG=$(_pick_file "$_APP_DIR" .swcrc)
 # A single file has no robots.txt next to it. Webpack drops an --env with an
 # empty value, so the config gets no robotsPath
 _ROBOTS_FILE=""
 if [ -z "$_IS_SINGLE_FILE" ]; then
-  _ROBOTS_FILE=$(_pick_file \
-    "$_APP_DIR/src/public/robots.txt" "$_VB_DIR/src/public/robots.txt")
+  _ROBOTS_FILE=$(_pick_file "$_APP_DIR" src/public/robots.txt)
 fi
-_FAVICON_FILE=$(_pick_file \
-  "$_APP_DIR/src/public/favicon.svg" "$_VB_DIR/src/public/favicon.svg")
+_FAVICON_FILE=$(_pick_file "$_APP_DIR" src/public/favicon.svg)
 
 _ARTIFACT="SPA bundle"
 if [ -n "$_IS_SINGLE_FILE" ]; then

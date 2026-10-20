@@ -34,6 +34,7 @@
   },
   "files": [
     "bin",
+    "defaults",
     "src",
     "template"
   ],

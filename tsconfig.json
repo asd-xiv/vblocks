@@ -5,6 +5,6 @@
     "rootDir": "./",
     "outDir": "./dist/types"
   },
-  "include": ["src", "eslint.config.js"],
+  "include": ["defaults", "eslint.config.js"],
   "exclude": ["node_modules", "dist", "coverage"]
 }
