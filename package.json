@@ -35,13 +35,13 @@
   "files": [
     "bin",
     "defaults",
-    "src",
-    "template"
+    "template",
+    "types"
   ],
   "type": "module",
   "exports": {
     "./client": {
-      "types": "./src/types/client.d.ts"
+      "types": "./types/client.d.ts"
     },
     "./package.json": "./package.json"
   },

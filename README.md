@@ -206,7 +206,7 @@ variable your code does not read.
 > the page can read it.
 
 > [!NOTE]  
-> The [client types](src/types/client.d.ts) declare `process.env` and nothing
+> The [client types](types/client.d.ts) declare `process.env` and nothing
 > else from Node, because Webpack replaces nothing else.
 
 ### Stop using `../../../` everywhere
@@ -257,7 +257,7 @@ import { Component } from "@self/components"
   `development` mode
 
 > [!NOTE]  
-> The [client types](src/types/client.d.ts) declare `.css`, image and font
+> The [client types](types/client.d.ts) declare `.css`, image and font
 > imports.
 
 ### Replace a default config
@@ -355,7 +355,7 @@ app folder:
    npm install --save-dev @asd14/vblocks    # needs react and react-dom ^18 or ^19
    ```
 
-2. **Add the [client types](src/types/client.d.ts) and the
+2. **Add the [client types](types/client.d.ts) and the
    [`@self`](#stop-using--everywhere) alias to your `tsconfig.json`**
 
    ```diff
