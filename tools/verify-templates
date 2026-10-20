@@ -33,10 +33,10 @@ set -eu
 #   3   A template or an app did not scaffold or build
 #
 # SEE ALSO
-#   bin/vblocks.sh
+#   bin/vblocks
 
 ROOT_DIR=$(dirname "$(dirname "$(realpath "$0")")")
-VBLOCKS_SCRIPT="$ROOT_DIR/bin/vblocks.sh"
+VBLOCKS_SCRIPT="$ROOT_DIR/bin/vblocks"
 OUT_DIR="$ROOT_DIR/tmp"
 
 # ╭───

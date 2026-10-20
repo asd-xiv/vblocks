@@ -1,0 +1,38 @@
+#!/bin/sh
+
+# vblocks eject <webpack|postcss|swc>
+#
+# Print a default config, to save in the app folder. vblocks runs this file.
+# Never call it directly.
+
+set -eu
+
+_SCRIPT_DIR=$(dirname "$0")
+# shellcheck source=vblocks.sh
+. "$_SCRIPT_DIR/vblocks.sh"
+
+# ╭───
+# │ Settings
+# ╰───
+
+_EJECT_CONFIG=""      # eject <config>
+
+# ╭───
+# │ Flags and positionals
+# ╰───
+
+[ "$#" -ne 1 ] && _fail 2 -v available_configs "webpack,postcss,swc" "eject needs one config"
+
+case "$1" in
+  webpack) _EJECT_CONFIG="webpack.config.js" ;;
+  postcss) _EJECT_CONFIG="postcss.config.js" ;;
+  swc) _EJECT_CONFIG=".swcrc" ;;
+  *) _fail 2 -v config "$1" -v available_configs "webpack,postcss,swc" "Unknown config" ;;
+esac
+
+# ╭───
+# │ Main
+# ╰───
+
+cat -- "$_VB_DIR/src/$_EJECT_CONFIG"
+exit 0

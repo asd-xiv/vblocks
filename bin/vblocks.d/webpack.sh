@@ -1,0 +1,135 @@
+#!/bin/sh
+
+# webpack.sh - The primitives of serve and build: the --log-level guard, the
+# configs, the summary and the Webpack run
+
+# ╭───
+# │ Primitives
+# ╰───
+
+# _pick_file <file> <default-file>
+#
+# Print <file> when it exists, otherwise <default-file>.
+_pick_file() {
+  if [ -f "$1" ]; then
+    printf '%s\n' "$1"
+  else
+    printf '%s\n' "$2"
+  fi
+}
+
+# ╭───
+# │ Domain primitives
+# ╰───
+
+# _guard_log_level <level>
+#
+# EXIT
+#   2   <level> is empty or not one of --log-level: error, warn, info or verbose
+_guard_log_level() {
+  gll_levels="error,warn,info,verbose"
+  case "$1" in
+    error | warn | info | verbose) ;;
+    "") _fail 2 -v available_levels "$gll_levels" "--log-level needs a level" ;;
+    *) _fail 2 -v level "$1" -v available_levels "$gll_levels" "Unknown level" ;;
+  esac
+}
+
+# _pick_config <app-dir> <file>
+#
+# Print <file> in <app-dir> when it exists, otherwise the default of VBlocks in
+# src/.
+_pick_config() {
+  _pick_file "$1/$2" "$_VB_DIR/src/$2"
+}
+
+# _export_configs <app-dir>
+#
+# Pick the PostCSS and the SWC config of <app-dir>, or the defaults of VBlocks.
+# Export them as VB_POSTCSS_CONFIG and VB_SWC_CONFIG. webpack.config.js reads
+# them.
+_export_configs() {
+  VB_POSTCSS_CONFIG=$(_pick_config "$1" postcss.config.js)
+  VB_SWC_CONFIG=$(_pick_config "$1" .swcrc)
+  export VB_POSTCSS_CONFIG VB_SWC_CONFIG
+}
+
+# _print_config_path <config-file> <app-dir>
+#
+# Print the path of <config-file>, its folder as $APP_DIR, or as $VBLOCKS_DIR in
+# gray for a default config.
+_print_config_path() {
+  case "$1" in
+    "$2"/*) printf '%s\n' "\$APP_DIR/${1#"$2"/}" ;;
+    "$_VB_DIR"/*) printf '%s\n' "${_GRAY}\$VBLOCKS_DIR/${1#"$_VB_DIR"/}${_RESET}" ;;
+    *) printf '%s\n' "$1" ;;
+  esac
+}
+
+# _print_summary <app-dir> <webpack-config> <postcss-config> <swc-config>
+#
+# Print the app folder, the VBlocks folder and the configs Webpack runs with.
+_print_summary() {
+  # The icons of the tools, only on a terminal
+  ps_webpack_icon="" ps_postcss_icon="" ps_swc_icon=""
+  if [ -n "$_IS_TERMINAL" ]; then
+    ps_webpack_icon=" "
+    ps_postcss_icon=" "
+    ps_swc_icon="󱡮 "
+  fi
+
+  printf '%s\t%s\n' "${_BOLD}\$APP_DIR${_RESET}" "$(_shorten_home "$1")"
+  printf '%s\t%s\n' "${_BOLD}\$VBLOCKS_DIR${_RESET}" "${_GRAY}$(_shorten_home "$_VB_DIR")${_RESET}"
+  printf '\n'
+  printf '%s\t%s\n' "${ps_webpack_icon}${_BOLD}Webpack${_RESET}" "$(_print_config_path "$2" "$1")"
+  printf '%s\t%s\n' "${ps_postcss_icon}${_BOLD}PostCSS${_RESET}" "$(_print_config_path "$3" "$1")"
+  printf '%s\t%s\n' "${ps_swc_icon}${_BOLD}SWC${_RESET}" "$(_print_config_path "$4" "$1")"
+  printf '\n'
+}
+
+# _run_webpack <action> <app-dir> <webpack-config> <log-level> [<webpack option>...]
+#
+# Run `webpack <action>` for the app in <app-dir>. <log-level> is one of
+# --log-level: error, warn, info or verbose.
+#
+# EXIT
+#   2   Webpack rejected an option or the config
+#   3   Webpack failed
+_run_webpack() {
+  rw_action=$1
+  rw_app_dir=$2
+  rw_config=$3
+  rw_log_level=$4
+  shift 4
+
+  rw_robots_file=$(_pick_file \
+    "$rw_app_dir/src/public/robots.txt" "$_VB_DIR/src/public/robots.txt")
+  rw_favicon_file=$(_pick_file \
+    "$rw_app_dir/src/public/favicon.svg" "$_VB_DIR/src/public/favicon.svg")
+
+  # Run the webpack-cli of VBlocks, the version VBlocks depends on. npx
+  # would run the first one it finds from the current folder, or offer to
+  # install one
+  rw_cli_file=$(node -p \
+    'require.resolve("webpack-cli/bin/cli.js", { paths: [process.argv[1]] })' \
+    "$_VB_DIR") || _fail 3 "Could not find the webpack-cli of VBlocks"
+
+  rw_status=0
+  # The Webpack config takes the levels of --log-level, and maps them to its
+  # stats and infrastructureLogging
+  node "$rw_cli_file" "$rw_action" \
+    --config "$rw_config" \
+    --env "entryDir=$rw_app_dir" \
+    --env "logLevel=$rw_log_level" \
+    --env "robotsPath=$rw_robots_file" \
+    --env "faviconPath=$rw_favicon_file" \
+    "$@" || rw_status=$?
+
+  # webpack-cli exits 1 when the build has errors, 2 when an option or the
+  # config is wrong
+  case "$rw_status" in
+    0) return 0 ;;
+    2) _fail 2 "Webpack rejected an option or the config" ;;
+    *) _fail 3 "Webpack failed" ;;
+  esac
+}

@@ -1,0 +1,117 @@
+#!/bin/sh
+
+# vblocks build [OPTIONS] [<webpack option>...]
+#
+# Build the app into dist/ in the app folder, then print
+# each file in it. vblocks runs this file. Never call it directly.
+
+set -eu
+
+_SCRIPT_DIR=$(dirname "$0")
+# shellcheck source=vblocks.sh
+. "$_SCRIPT_DIR/vblocks.sh"
+# shellcheck source=webpack.sh
+. "$_SCRIPT_DIR/webpack.sh"
+
+# ╭───
+# │ Settings
+# ╰───
+
+_PREFIX_DIR=""    # --prefix, the app folder
+_LOG_LEVEL="warn" # --log-level: error, warn, info or verbose
+
+# ╭───
+# │ Domain primitives
+# ╰───
+
+# _print_build_files <app-dir>
+#
+# Print each file in the dist/ of <app-dir> as $APP_DIR/dist/..., a tab and its
+# size, then the total size. Webpack empties dist/ before each build, so every
+# file there is from the last build.
+_print_build_files() {
+  # An ejected config can write elsewhere
+  [ -d "$1/dist" ] || return 0
+
+  (cd -- "$1/dist" && find . -type f | LC_ALL=C sort) \
+    | while IFS= read -r pbf_file; do
+      printf '%s\t%s\n' "$(wc -c <"$1/dist/$pbf_file")" "${pbf_file#./}"
+    done \
+    | awk -F '\t' -v gray="$_GRAY" -v bold="$_BOLD" -v reset="$_RESET" '
+      function format_size(bytes) {
+        if (bytes < 1024) return bytes " B"
+        if (bytes < 1024 * 1024) return sprintf("%.1f KiB", bytes / 1024)
+        return sprintf("%.1f MiB", bytes / 1024 / 1024)
+      }
+
+      {
+        total += $1
+        printf "$APP_DIR/dist/%s\t%s%s%s\n", $2, gray, format_size($1), reset
+      }
+      END { printf "\n%sTotal%s\t%s\n", bold, reset, format_size(total) }
+    '
+}
+
+# ╭───
+# │ Flags and positionals
+# ╰───
+
+# Take the flags of VBlocks out of the arguments. Webpack gets the rest
+_ARG_COUNT=$#
+while [ "$_ARG_COUNT" -gt 0 ]; do
+  _ARG=$1
+  shift
+  _ARG_COUNT=$((_ARG_COUNT - 1))
+
+  case "$_ARG" in
+    --prefix)
+      [ "$_ARG_COUNT" -eq 0 ] && _fail 2 "--prefix needs a folder"
+      _PREFIX_DIR=$1
+      shift
+      _ARG_COUNT=$((_ARG_COUNT - 1))
+      ;;
+    --log-level)
+      [ "$_ARG_COUNT" -eq 0 ] && _guard_log_level ""
+      _guard_log_level "$1"
+      _LOG_LEVEL=$1
+      shift
+      _ARG_COUNT=$((_ARG_COUNT - 1))
+      ;;
+    --single-file)
+      # The default Webpack config reads env.single. An ejected config
+      # supports the flag only if it reads env.single too
+      set -- "$@" --env single
+      ;;
+    --analyze)
+      _fail 2 "--analyze works only with serve"
+      ;;
+    *)
+      set -- "$@" "$_ARG"
+      ;;
+  esac
+done
+
+if [ -n "$_PREFIX_DIR" ] && [ ! -d "$_PREFIX_DIR" ]; then
+  _fail 2 -v prefix "$_PREFIX_DIR" "--prefix is not a folder"
+fi
+
+# node runs webpack-cli
+_require_cmd node
+_export_package_info
+
+# ╭───
+# │ Main
+# ╰───
+
+_APP_DIR=$(cd -- "${_PREFIX_DIR:-.}" && pwd)
+_WEBPACK_CONFIG=$(_pick_config "$_APP_DIR" webpack.config.js)
+_export_configs "$_APP_DIR"
+
+_print_header "$VB_VERSION" "$VB_DESCRIPTION" >&2
+_print_summary "$_APP_DIR" "$_WEBPACK_CONFIG" "$VB_POSTCSS_CONFIG" "$VB_SWC_CONFIG"
+
+# A --mode in "$@" comes later, so it overrides this one
+_run_webpack build "$_APP_DIR" "$_WEBPACK_CONFIG" "$_LOG_LEVEL" --mode production "$@"
+printf '\n'
+_print_build_files "$_APP_DIR"
+exit 0

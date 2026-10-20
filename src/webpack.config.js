@@ -10,8 +10,8 @@ import MiniCssExtractPlugin from "mini-css-extract-plugin"
 import webpack from "webpack"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 
-// `bin/vblocks.sh` sets them to the PostCSS and SWC configs it picked, the
-// app's own or the default
+// `bin/vblocks.d/webpack.sh` sets them to the PostCSS and SWC configs it
+// picked, the app's own or the default
 const VB_SWC_CONFIG = process.env["VB_SWC_CONFIG"]
 const VB_POSTCSS_CONFIG = process.env["VB_POSTCSS_CONFIG"]
 
@@ -234,7 +234,7 @@ const inlineAssets = compiler => {
           ...tag,
           attributes: {
             rel,
-            // `bin/vblocks.sh` only passes a `favicon.svg`
+            // `bin/vblocks.d/webpack.sh` only passes a `favicon.svg`
             href: `data:image/svg+xml;base64,${Buffer.from(takeAsset(href)).toString("base64")}`,
           },
         }

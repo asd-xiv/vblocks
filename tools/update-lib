@@ -3,21 +3,21 @@
 set -eu
 
 # NAME
-#   update-lib - Download lib.sh of posix-utils into bin/
+#   update-lib - Download lib.sh of posix-utils into bin/vblocks.d/
 #
 # SYNOPSIS
 #   update-lib
 #
 # DESCRIPTION
-#   Replaces bin/lib.sh with the one of posix-utils at LIB_VERSION. Edit
-#   LIB_VERSION below to move to another release, then review the diff of
-#   bin/lib.sh. Never edit bin/lib.sh by hand, the next update replaces it.
+#   Replaces bin/vblocks.d/lib.sh with the one of posix-utils at LIB_VERSION.
+#   Edit LIB_VERSION below to move to another release, then review the diff of
+#   lib.sh. Never edit lib.sh by hand, the next update replaces it.
 #
 # EXAMPLE
 #   tools/update-lib
 #
 # EXIT CODES
-#   0   bin/lib.sh holds the pinned version
+#   0   bin/vblocks.d/lib.sh holds the pinned version
 #   3   curl is missing, or the download failed
 #
 # SEE ALSO
@@ -32,8 +32,8 @@ if ! command -v curl >/dev/null 2>&1; then
   exit 3
 fi
 
-# Download next to the target, so a failed download leaves bin/lib.sh as it was
-TEMP_FILE=$(mktemp "$ROOT_DIR/bin/lib.sh.XXXXXX")
+# Download next to the target, so a failed download leaves lib.sh as it was
+TEMP_FILE=$(mktemp "$ROOT_DIR/bin/vblocks.d/lib.sh.XXXXXX")
 trap 'rm -f -- "$TEMP_FILE"' EXIT
 
 if ! curl -fsSL -- "$LIB_URL" >"$TEMP_FILE"; then
@@ -42,6 +42,6 @@ if ! curl -fsSL -- "$LIB_URL" >"$TEMP_FILE"; then
 fi
 
 chmod 644 -- "$TEMP_FILE"
-mv -- "$TEMP_FILE" "$ROOT_DIR/bin/lib.sh"
-printf 'update-lib: bin/lib.sh is posix-utils %s\n' "$LIB_VERSION" >&2
+mv -- "$TEMP_FILE" "$ROOT_DIR/bin/vblocks.d/lib.sh"
+printf 'update-lib: bin/vblocks.d/lib.sh is posix-utils %s\n' "$LIB_VERSION" >&2
 exit 0
