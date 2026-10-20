@@ -48,20 +48,14 @@ _shorten_home() {
 # │ Domain primitives
 # ╰───
 
-# _export_package_info
+# _export_version
 #
-# Read the version and the description of VBlocks from its package.json, in one
-# node call. Export them as VB_VERSION and VB_DESCRIPTION: the commands pass
-# them to the header, and the post-init hooks read VB_VERSION. Guard node
-# before the call.
-_export_package_info() {
-  {
-    read -r VB_VERSION
-    read -r VB_DESCRIPTION
-  } <<EOF
-$(node -p 'const p = require(process.argv[1]); p.version + "\n" + p.description' "$_VB_DIR/package.json")
-EOF
-  export VB_VERSION VB_DESCRIPTION
+# Read the version of VBlocks from its package.json, and export it as
+# VB_VERSION: the commands pass it to the header, and the post-init hooks read
+# it. Guard node before the call.
+_export_version() {
+  VB_VERSION=$(node -p 'require(process.argv[1]).version' "$_VB_DIR/package.json")
+  export VB_VERSION
 }
 
 # _print_header <version> <title>

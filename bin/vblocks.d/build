@@ -101,7 +101,7 @@ fi
 
 # node runs webpack-cli
 _require_cmd node
-_export_package_info
+_export_version
 
 # ╭───
 # │ Main
@@ -121,7 +121,12 @@ fi
 _FAVICON_FILE=$(_pick_file \
   "$_APP_DIR/src/public/favicon.svg" "$_VB_DIR/src/public/favicon.svg")
 
-_print_header "$VB_VERSION" "$VB_DESCRIPTION" >&2
+_ARTIFACT="SPA bundle"
+if [ -n "$_IS_SINGLE_FILE" ]; then
+  _ARTIFACT="single file"
+fi
+
+_print_header "$VB_VERSION" "${_BOLD}build${_RESET}: $_MODE, $_ARTIFACT" >&2
 _print_summary "$_APP_DIR" "$_WEBPACK_CONFIG" "$_POSTCSS_CONFIG" "$_SWC_CONFIG" \
   "$_ROBOTS_FILE" "$_FAVICON_FILE"
 

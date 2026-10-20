@@ -68,7 +68,7 @@ fi
 
 # node runs webpack-cli
 _require_cmd node
-_export_package_info
+_export_version
 
 # ╭───
 # │ Main
@@ -83,7 +83,7 @@ _ROBOTS_FILE=$(_pick_file \
 _FAVICON_FILE=$(_pick_file \
   "$_APP_DIR/src/public/favicon.svg" "$_VB_DIR/src/public/favicon.svg")
 
-_print_header "$VB_VERSION" "$VB_DESCRIPTION" >&2
+_print_header "$VB_VERSION" "${_BOLD}serve${_RESET}: $_MODE${_SHOULD_ANALYZE:+, analyze}" >&2
 _print_summary "$_APP_DIR" "$_WEBPACK_CONFIG" "$_POSTCSS_CONFIG" "$_SWC_CONFIG" \
   "$_ROBOTS_FILE" "$_FAVICON_FILE"
 

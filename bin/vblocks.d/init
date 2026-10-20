@@ -238,7 +238,7 @@ fi
 
 # node reads the version. The post-init hooks run npm
 _require_cmd node npm
-_export_package_info
+_export_version
 
 # ╭───
 # │ Main
