@@ -1,5 +1,5 @@
 /**
- * Types for the files `../webpack.config.js` teaches `import` to load.
+ * Types for the files `../defaults/webpack.config.js` teaches `import` to load.
  *
  * @example
  * // tsconfig.json
