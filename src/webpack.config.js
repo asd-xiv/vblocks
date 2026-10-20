@@ -250,7 +250,7 @@ const inlineAssets = compiler => {
  * @property {string} entryDir - The app folder: `--prefix`, or the folder VBlocks runs in
  * @property {string} postcssConfigPath - Path to the PostCSS config, the app's own or the default
  * @property {string} swcConfigPath - Path to the SWC config, the app's own or the default
- * @property {string} robotsPath - Path to the robots.txt copied to the output folder
+ * @property {string} [robotsPath] - Path to the robots.txt copied to the output folder, missing in a single-file build
  * @property {string} faviconPath - Path to the favicon.svg copied to the output folder
  * @property {boolean} [single] - Build one standalone index.html, every asset inlined
  * @property {boolean} [analyze] - Run the bundle analyzer next to the dev server

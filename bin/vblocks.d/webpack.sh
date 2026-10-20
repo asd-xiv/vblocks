@@ -56,11 +56,11 @@ _pick_config() {
   _pick_file "$1/$2" "$_VB_DIR/src/$2"
 }
 
-# _print_config_path <config-file> <app-dir>
+# _print_file_path <file> <app-dir>
 #
-# Print the path of <config-file>, its folder as $APP_DIR, or as $VBLOCKS_DIR in
-# gray for a default config.
-_print_config_path() {
+# Print the path of <file>, its folder as $APP_DIR, or as $VBLOCKS_DIR in gray
+# for a default of VBlocks.
+_print_file_path() {
   case "$1" in
     "$2"/*) printf '%s\n' "\$APP_DIR/${1#"$2"/}" ;;
     "$_VB_DIR"/*) printf '%s\n' "${_GRAY}\$VBLOCKS_DIR/${1#"$_VB_DIR"/}${_RESET}" ;;
@@ -68,48 +68,47 @@ _print_config_path() {
   esac
 }
 
-# _print_summary <app-dir> <webpack-config> <postcss-config> <swc-config>
+# _print_summary <app-dir> <webpack-config> <postcss-config> <swc-config> <robots-file> <favicon-file>
 #
-# Print the app folder, the VBlocks folder and the configs Webpack runs with.
+# Print the app folder, the VBlocks folder and the files Webpack runs with. An
+# empty <robots-file> prints no Robots line.
 _print_summary() {
-  # The icons of the tools, only on a terminal
+  # The icons of the tools and the files, only on a terminal
   ps_webpack_icon="" ps_postcss_icon="" ps_swc_icon=""
+  ps_robots_icon="" ps_favicon_icon=""
   if [ -n "$_IS_TERMINAL" ]; then
     ps_webpack_icon=" "
     ps_postcss_icon=" "
     ps_swc_icon="󱡮 "
+    ps_robots_icon="󰚩 "
+    ps_favicon_icon=" "
   fi
 
   printf '%s\t%s\n' "${_BOLD}\$APP_DIR${_RESET}" "$(_shorten_home "$1")"
   printf '%s\t%s\n' "${_BOLD}\$VBLOCKS_DIR${_RESET}" "${_GRAY}$(_shorten_home "$_VB_DIR")${_RESET}"
   printf '\n'
-  printf '%s\t%s\n' "${ps_webpack_icon}${_BOLD}Webpack${_RESET}" "$(_print_config_path "$2" "$1")"
-  printf '%s\t%s\n' "${ps_postcss_icon}${_BOLD}PostCSS${_RESET}" "$(_print_config_path "$3" "$1")"
-  printf '%s\t%s\n' "${ps_swc_icon}${_BOLD}SWC${_RESET}" "$(_print_config_path "$4" "$1")"
+  printf '%s\t%s\n' "${ps_webpack_icon}${_BOLD}Webpack${_RESET}" "$(_print_file_path "$2" "$1")"
+  printf '%s\t%s\n' "${ps_postcss_icon}${_BOLD}PostCSS${_RESET}" "$(_print_file_path "$3" "$1")"
+  printf '%s\t%s\n' "${ps_swc_icon}${_BOLD}SWC${_RESET}" "$(_print_file_path "$4" "$1")"
+  if [ -n "$5" ]; then
+    printf '%s\t%s\n' "${ps_robots_icon}${_BOLD}Robots${_RESET}" "$(_print_file_path "$5" "$1")"
+  fi
+  printf '%s\t%s\n' "${ps_favicon_icon}${_BOLD}Favicon${_RESET}" "$(_print_file_path "$6" "$1")"
   printf '\n'
 }
 
-# _run_webpack <action> <app-dir> <webpack-config> <postcss-config> <swc-config> <log-level> [<webpack option>...]
+# _run_webpack <action> <webpack-config> [<webpack option>...]
 #
-# Run `webpack <action>` for the app in <app-dir>, with the three configs.
-# <log-level> is one of --log-level: error, warn, info or verbose.
+# Run `webpack <action>` with <webpack-config> and the options, through the
+# webpack-cli of VBlocks.
 #
 # EXIT
 #   2   Webpack rejected an option or the config
 #   3   Webpack failed
 _run_webpack() {
   rw_action=$1
-  rw_app_dir=$2
-  rw_config=$3
-  rw_postcss_config=$4
-  rw_swc_config=$5
-  rw_log_level=$6
-  shift 6
-
-  rw_robots_file=$(_pick_file \
-    "$rw_app_dir/src/public/robots.txt" "$_VB_DIR/src/public/robots.txt")
-  rw_favicon_file=$(_pick_file \
-    "$rw_app_dir/src/public/favicon.svg" "$_VB_DIR/src/public/favicon.svg")
+  rw_config=$2
+  shift 2
 
   # Run the webpack-cli of VBlocks, the version VBlocks depends on. npx
   # would run the first one it finds from the current folder, or offer to
@@ -119,17 +118,7 @@ _run_webpack() {
     "$_VB_DIR") || _fail 3 "Could not find the webpack-cli of VBlocks"
 
   rw_status=0
-  # The Webpack config takes the levels of --log-level, and maps them to its
-  # stats and infrastructureLogging
-  node "$rw_cli_file" "$rw_action" \
-    --config "$rw_config" \
-    --env "entryDir=$rw_app_dir" \
-    --env "postcssConfigPath=$rw_postcss_config" \
-    --env "swcConfigPath=$rw_swc_config" \
-    --env "logLevel=$rw_log_level" \
-    --env "robotsPath=$rw_robots_file" \
-    --env "faviconPath=$rw_favicon_file" \
-    "$@" || rw_status=$?
+  node "$rw_cli_file" "$rw_action" --config "$rw_config" "$@" || rw_status=$?
 
   # webpack-cli exits 1 when the build has errors, 2 when an option or the
   # config is wrong

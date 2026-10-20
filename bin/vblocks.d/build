@@ -75,7 +75,7 @@ while [ "$#" -gt 0 ]; do
       _LOG_LEVEL=$2
       shift 2
       ;;
-    --single-file)
+    --single-file | --single)
       _IS_SINGLE_FILE="true"
       shift
       ;;
@@ -111,13 +111,29 @@ _APP_DIR=$(cd -- "${_PREFIX_DIR:-.}" && pwd)
 _WEBPACK_CONFIG=$(_pick_config "$_APP_DIR" webpack.config.js)
 _POSTCSS_CONFIG=$(_pick_config "$_APP_DIR" postcss.config.js)
 _SWC_CONFIG=$(_pick_config "$_APP_DIR" .swcrc)
+# A single file has no robots.txt next to it. Webpack drops an --env with an
+# empty value, so the config gets no robotsPath
+_ROBOTS_FILE=""
+if [ -z "$_IS_SINGLE_FILE" ]; then
+  _ROBOTS_FILE=$(_pick_file \
+    "$_APP_DIR/src/public/robots.txt" "$_VB_DIR/src/public/robots.txt")
+fi
+_FAVICON_FILE=$(_pick_file \
+  "$_APP_DIR/src/public/favicon.svg" "$_VB_DIR/src/public/favicon.svg")
 
 _print_header "$VB_VERSION" "$VB_DESCRIPTION" >&2
-_print_summary "$_APP_DIR" "$_WEBPACK_CONFIG" "$_POSTCSS_CONFIG" "$_SWC_CONFIG"
+_print_summary "$_APP_DIR" "$_WEBPACK_CONFIG" "$_POSTCSS_CONFIG" "$_SWC_CONFIG" \
+  "$_ROBOTS_FILE" "$_FAVICON_FILE"
 
 # The default Webpack config reads env.single. An ejected config supports
 # --single-file only if it reads env.single too
-_run_webpack build "$_APP_DIR" "$_WEBPACK_CONFIG" "$_POSTCSS_CONFIG" "$_SWC_CONFIG" "$_LOG_LEVEL" \
+_run_webpack build "$_WEBPACK_CONFIG" \
+  --env "entryDir=$_APP_DIR" \
+  --env "postcssConfigPath=$_POSTCSS_CONFIG" \
+  --env "swcConfigPath=$_SWC_CONFIG" \
+  --env "robotsPath=$_ROBOTS_FILE" \
+  --env "faviconPath=$_FAVICON_FILE" \
+  --env "logLevel=$_LOG_LEVEL" \
   --mode "$_MODE" ${_IS_SINGLE_FILE:+--env single} "$@"
 printf '\n'
 _print_build_files "$_APP_DIR"
