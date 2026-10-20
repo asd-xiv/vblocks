@@ -56,17 +56,6 @@ _pick_config() {
   _pick_file "$1/$2" "$_VB_DIR/src/$2"
 }
 
-# _export_configs <app-dir>
-#
-# Pick the PostCSS and the SWC config of <app-dir>, or the defaults of VBlocks.
-# Export them as VB_POSTCSS_CONFIG and VB_SWC_CONFIG. webpack.config.js reads
-# them.
-_export_configs() {
-  VB_POSTCSS_CONFIG=$(_pick_config "$1" postcss.config.js)
-  VB_SWC_CONFIG=$(_pick_config "$1" .swcrc)
-  export VB_POSTCSS_CONFIG VB_SWC_CONFIG
-}
-
 # _print_config_path <config-file> <app-dir>
 #
 # Print the path of <config-file>, its folder as $APP_DIR, or as $VBLOCKS_DIR in
@@ -100,10 +89,10 @@ _print_summary() {
   printf '\n'
 }
 
-# _run_webpack <action> <app-dir> <webpack-config> <log-level> [<webpack option>...]
+# _run_webpack <action> <app-dir> <webpack-config> <postcss-config> <swc-config> <log-level> [<webpack option>...]
 #
-# Run `webpack <action>` for the app in <app-dir>. <log-level> is one of
-# --log-level: error, warn, info or verbose.
+# Run `webpack <action>` for the app in <app-dir>, with the three configs.
+# <log-level> is one of --log-level: error, warn, info or verbose.
 #
 # EXIT
 #   2   Webpack rejected an option or the config
@@ -112,8 +101,10 @@ _run_webpack() {
   rw_action=$1
   rw_app_dir=$2
   rw_config=$3
-  rw_log_level=$4
-  shift 4
+  rw_postcss_config=$4
+  rw_swc_config=$5
+  rw_log_level=$6
+  shift 6
 
   rw_robots_file=$(_pick_file \
     "$rw_app_dir/src/public/robots.txt" "$_VB_DIR/src/public/robots.txt")
@@ -133,6 +124,8 @@ _run_webpack() {
   node "$rw_cli_file" "$rw_action" \
     --config "$rw_config" \
     --env "entryDir=$rw_app_dir" \
+    --env "postcssConfigPath=$rw_postcss_config" \
+    --env "swcConfigPath=$rw_swc_config" \
     --env "logLevel=$rw_log_level" \
     --env "robotsPath=$rw_robots_file" \
     --env "faviconPath=$rw_favicon_file" \

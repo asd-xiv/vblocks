@@ -288,11 +288,6 @@ Each config in your app folder replaces the default of the same name:
 > - `.swcrc -> jsc.transform.react.refresh`: VBlocks adds the React Refresh
 >   transform when `serve` runs in `development` mode
 
-> [!NOTE]  
-> VBlocks passes [`build --single-file`](#vblocks-build) and
-> [`serve --analyze`](#vblocks-serve) to your `webpack.config.js` as
-> `env.single` and `env.analyze`.
-
 ### Style with Tailwind
 
 VBlocks does not include Tailwind. Add it through a `postcss.config.js` in your

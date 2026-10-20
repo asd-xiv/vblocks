@@ -10,25 +10,15 @@ import MiniCssExtractPlugin from "mini-css-extract-plugin"
 import webpack from "webpack"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 
-// `bin/vblocks.d/webpack.sh` sets them to the PostCSS and SWC configs it
-// picked, the app's own or the default
-const VB_SWC_CONFIG = process.env["VB_SWC_CONFIG"]
-const VB_POSTCSS_CONFIG = process.env["VB_POSTCSS_CONFIG"]
-
-if (!VB_SWC_CONFIG)
-  throw new Error("VB_SWC_CONFIG environment variable is not defined")
-
-if (!VB_POSTCSS_CONFIG)
-  throw new Error("VB_POSTCSS_CONFIG environment variable is not defined")
-
 /**
  * Read the SWC config, set the browser targets it lacks, and turn on React
  * Refresh when `hasReactRefresh` is true
  *
+ * @param {string} path
  * @param {{ hasReactRefresh: boolean }} options
  */
-const loadSwcConfig = ({ hasReactRefresh }) => {
-  const content = fs.readFileSync(VB_SWC_CONFIG, "utf8")
+const loadSwcConfig = (path, { hasReactRefresh }) => {
+  const content = fs.readFileSync(path, "utf8")
   const config = /** @type {unknown} */ (JSON.parse(content))
   const typedConfig = /** @type {import("@swc/core").Config} */ (config)
 
@@ -81,8 +71,9 @@ const getCssModuleOptions = isProduction => ({
  * @param {"local" | "global"} options.classScope - `local` renames each class
  *   to a unique name, for `*.module.css`. `global` keeps the names as written
  * @param {boolean} options.isProduction
+ * @param {string} options.postcssConfigPath
  */
-const getCssLoaders = ({ classScope, isProduction }) => [
+const getCssLoaders = ({ classScope, isProduction, postcssConfigPath }) => [
   {
     loader: MiniCssExtractPlugin.loader,
   },
@@ -105,7 +96,7 @@ const getCssLoaders = ({ classScope, isProduction }) => [
     loader: "postcss-loader",
     options: {
       postcssOptions: {
-        config: VB_POSTCSS_CONFIG,
+        config: postcssConfigPath,
       },
     },
   },
@@ -257,6 +248,8 @@ const inlineAssets = compiler => {
  * @typedef {Object} VBlocksEnvironment
  *
  * @property {string} entryDir - The app folder: `--prefix`, or the folder VBlocks runs in
+ * @property {string} postcssConfigPath - Path to the PostCSS config, the app's own or the default
+ * @property {string} swcConfigPath - Path to the SWC config, the app's own or the default
  * @property {string} robotsPath - Path to the robots.txt copied to the output folder
  * @property {string} faviconPath - Path to the favicon.svg copied to the output folder
  * @property {boolean} [single] - Build one standalone index.html, every asset inlined
@@ -286,7 +279,16 @@ const STATS_BY_LOG_LEVEL = /** @type {const} */ ({
  * @returns {WebpackConfiguration}
  */
 export default (
-  { entryDir, robotsPath, faviconPath, single, analyze, logLevel = "warn" },
+  {
+    entryDir,
+    postcssConfigPath,
+    swcConfigPath,
+    robotsPath,
+    faviconPath,
+    single,
+    analyze,
+    logLevel = "warn",
+  },
   { mode }
 ) => {
   const isProduction = mode === "production"
@@ -294,7 +296,7 @@ export default (
   const isSingle = Boolean(single) && !isServe
   const isAnalyze = Boolean(analyze) && isServe
   const hasReactRefresh = isServe && mode === "development"
-  const swcConfig = loadSwcConfig({ hasReactRefresh })
+  const swcConfig = loadSwcConfig(swcConfigPath, { hasReactRefresh })
 
   const paths = {
     appEntry: `${entryDir}/src/index.tsx`,
@@ -362,12 +364,20 @@ export default (
         },
         {
           test: /\.module\.css$/,
-          use: getCssLoaders({ classScope: "local", isProduction }),
+          use: getCssLoaders({
+            classScope: "local",
+            isProduction,
+            postcssConfigPath,
+          }),
         },
         {
           test: /\.css$/,
           exclude: /\.module\.css$/,
-          use: getCssLoaders({ classScope: "global", isProduction }),
+          use: getCssLoaders({
+            classScope: "global",
+            isProduction,
+            postcssConfigPath,
+          }),
         },
         {
           test: /\.(jpg|gif|png|svg)$/,
