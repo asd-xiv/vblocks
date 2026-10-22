@@ -500,6 +500,10 @@ npx vblocks eject postcss > postcss.config.js
 npx vblocks eject swc > .swcrc
 ```
 
+An ejected config loads its plugins and loaders from your project. Install them
+in the project folder, eg. `postcss-preset-env` and `cssnano` for the PostCSS
+config.
+
 ### Templates
 
 All templates scaffold `src/index.html`, `src/index.css` and `tsconfig.json`.

@@ -1,13 +1,14 @@
+import cssnano from "cssnano"
+import postcssPresetEnv from "postcss-preset-env"
+
 /**
+ * Import the plugins, so Node resolves them from this file's folder
+ *
  * @param {{ mode: "production" | "development" | "none" }} api
  */
 export default ({ mode }) => ({
-  plugins: {
-    "postcss-preset-env": {
-      stage: 2,
-    },
-    "cssnano": mode === "production" && {
-      preset: "default",
-    },
-  },
+  plugins: [
+    postcssPresetEnv({ stage: 2 }),
+    ...(mode === "production" ? [cssnano({ preset: "default" })] : []),
+  ],
 })
