@@ -82,9 +82,9 @@
     "webpack-dev-server": "^6.1.0"
   },
   "devDependencies": {
-    "@asd14/eslint-config": "^16.1.0",
+    "@asd14/eslint-config": "^16.2.0",
     "@asd14/prettier-config": "^1.5.0",
-    "@asd14/semantic-release-config": "^1.0.1",
+    "@asd14/semantic-release-config": "^1.1.0",
     "@asd14/ts-config": "^1.6.0",
     "@commitlint/cli": "^21.2.4",
     "@commitlint/config-conventional": "^21.2.4",
