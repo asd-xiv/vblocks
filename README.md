@@ -153,7 +153,7 @@ Several apps, eg. demos or MVP sketches, can share one `package.json` and one
    + │   ├─ postcss.config.js
    + │   └─ tsconfig.json
      ├─ .gitignore
-   ! └─ package.json      # + @xyflow/react, tailwindcss, @tailwindcss/postcss
+   ! └─ package.json      # + @xyflow/react, tailwindcss, @tailwindcss/postcss, cssnano
    ```
 
 3. **Start a development server for one app**
@@ -296,10 +296,11 @@ app folder:
 > The `xyflow` and `xyflow-tabs` templates of [`vblocks init`](#vblocks-init)
 > have this setup.
 
-1. **Install Tailwind and the Tailwind plugin for PostCSS**
+1. **Install Tailwind, the Tailwind plugin for PostCSS and cssnano, which the
+   ejected config imports**
 
    ```sh
-   npm install --save-dev tailwindcss @tailwindcss/postcss
+   npm install --save-dev tailwindcss @tailwindcss/postcss cssnano
    ```
 
 2. **Eject the default PostCSS config into your app folder**
@@ -311,18 +312,16 @@ app folder:
 3. **Replace `postcss-preset-env` with the Tailwind plugin**
 
    ```diff
+   +import tailwindcss from "@tailwindcss/postcss"
+    import cssnano from "cssnano"
+   -import postcssPresetEnv from "postcss-preset-env"
+
     export default ({ mode }) => ({
-      plugins: {
-   -    "postcss-preset-env": {
-   -      stage: 2,
-   -    },
-   +    "@tailwindcss/postcss": {
-   +      optimize: mode === "production",
-   +    },
-        "cssnano": mode === "production" && {
-          preset: "default",
-        },
-      },
+      plugins: [
+   -    postcssPresetEnv({ stage: 2 }),
+   +    tailwindcss({ optimize: mode === "production" }),
+        ...(mode === "production" ? [cssnano({ preset: "default" })] : []),
+      ],
     })
    ```
 
@@ -518,8 +517,8 @@ All templates scaffold `src/index.html`, `src/index.css` and `tsconfig.json`.
 
 One diagram, and a details panel for the selected node or edge.
 
-- Adds `@xyflow/react`, `tailwindcss` and `@tailwindcss/postcss` to the
-  `package.json` of the project folder
+- Adds `@xyflow/react`, `tailwindcss`, `@tailwindcss/postcss` and `cssnano` to
+  the `package.json` of the project folder
 - Writes a `postcss.config.js` that configures Tailwind
 
 ```text

@@ -8,6 +8,7 @@ set -eu
 npm pkg set \
   "dependencies.@xyflow/react=^12" \
   "devDependencies.@tailwindcss/postcss=^4" \
+  "devDependencies.cssnano=^9" \
   "devDependencies.tailwindcss=^4"
 
 # Name the page in the browser tab.
