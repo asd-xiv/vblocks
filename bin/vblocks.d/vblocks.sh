@@ -13,8 +13,11 @@ _VB_DIR=$(dirname "$(dirname "$_SCRIPT_DIR")")
 # shellcheck source=lib.sh
 . "$_SCRIPT_DIR/lib.sh"
 
-# _log reads LOG_NAMESPACE, LOG_LEVEL and NO_LOG_TIME. VBlocks logs only errors,
-# through _fail. The time adds no fact to an error
+# _log reads LOG_NAMESPACE, LOG_LEVEL and NO_LOG_TIME.
+#
+# - NO_LOG_TIME drops the time, which adds no fact to a message
+# - Send each stderr message through _ok, _info, _warn or _fail
+#   - Only the header, the summaries and `help` print on their own
 LOG_NAMESPACE="vblocks"
 LOG_LEVEL="info"
 NO_LOG_TIME="true"

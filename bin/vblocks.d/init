@@ -35,6 +35,21 @@ _shorten_path() {
   esac
 }
 
+# _quote_path <path>
+#
+# Print <path> in single quotes, so a shell reads it back as one word. A
+# leading "~/" stays out of the quotes, so the shell still expands it.
+_quote_path() {
+  # shellcheck disable=SC2088 # a literal "~", for display
+  case "$1" in
+    "~/"*) qp_home="~/" qp_path=${1#"~/"} ;;
+    *) qp_home="" qp_path=$1 ;;
+  esac
+
+  # End the quotes, add an escaped quote, open them again: ' becomes '\''
+  printf "%s'%s'\n" "$qp_home" "$(printf '%s' "$qp_path" | sed "s/'/'\\\\''/g")"
+}
+
 # ╭───
 # │ Domain primitives
 # ╰───
@@ -157,27 +172,27 @@ _print_init_summary() {
 
 # _print_next_steps <parts> <init-dir> <project-dir> <init-abs-dir>
 #
-# Print the commands that run the new project. <init-dir> is the folder as the
-# user typed it, <init-abs-dir> its absolute path.
+# Print the next step and its command, in one line: for the plumbing, the init
+# of an app, otherwise the install and the serve of the app. <init-dir> is
+# <directory> as init prints it. <project-dir> and <init-abs-dir> are the
+# absolute paths of the project folder and of <directory>.
 _print_next_steps() {
   case "$1" in
     plumbing)
-      printf '\nNext, add an app:\n'
-      printf '  npx @asd14/vblocks init %s/<app> --only app\n' "$2"
+      _info -v add_cmd "npx @asd14/vblocks init $(_quote_path "$2")/your-app-name --only app" \
+        "Next, add an app"
       ;;
     app)
-      printf '\nNext:\n'
+      pns_cd=""
       if [ "$3" != "$PWD" ]; then
-        printf '  cd %s\n' "$(_shorten_path "$3")"
+        pns_cd="cd $(_quote_path "$(_shorten_path "$3")") && "
       fi
-      printf '  npm install\n'
-      printf '  npx vblocks serve --prefix %s\n' "${4#"$3"/}"
+      _info -v serve_cmd "${pns_cd}npm install && npx vblocks serve --prefix $(_quote_path "${4#"$3"/}")" \
+        "Next, serve the app"
       ;;
     *)
-      printf '\nNext:\n'
-      printf '  cd %s\n' "$2"
-      printf '  npm install\n'
-      printf '  npx vblocks serve\n'
+      _info -v serve_cmd "cd $(_quote_path "$2") && npm install && npx vblocks serve" \
+        "Next, serve the app"
       ;;
   esac
 }
