@@ -3,86 +3,36 @@
 set -eu
 
 # NAME
-#   vblocks - Write a project or an app, then serve or build it with Webpack
+#   vblocks - Zero-config React builds, as a static site or a single HTML file
 #
 # SYNOPSIS
-#   vblocks init <directory>
-#     [--template <plain|xyflow|xyflow-tabs>]
-#     [--only <app|plumbing>]
-#   vblocks serve
-#     [--mode <development|production>]
-#     [--prefix <directory>]
-#     [--analyze]
-#     [--log-level <error|warn|info|verbose>]
-#     [-- <webpack option>...]
-#   vblocks build
-#     [--mode <development|production>]
-#     [--prefix <directory>]
-#     [--single-file]
-#     [--log-level <error|warn|info|verbose>]
-#     [-- <webpack option>...]
-#   vblocks eject <webpack|postcss|swc>
+#   vblocks <command> [OPTIONS]
 #   vblocks -h | --help
 #
 # DESCRIPTION
-#   The app folder holds src/index.tsx and src/index.html. A config in it,
-#   webpack.config.js, postcss.config.js or .swcrc, replaces the VBlocks
-#   default of the same name.
+#   Each command prints its own help with --help.
 #
-#     init    Write a template into <directory>, which must be missing or
-#             empty. A template has two parts: the plumbing, which holds
-#             the files of the project folder, and the app. Without --only,
-#             write both.
-#             After each part, run its post-init hooks in <directory>.
-#             Print each file it adds, updates or drops, then the next
-#             steps.
-#     serve   Start the development server
-#     build   Build the app into dist/ in the app folder. Print each file
-#             in dist/, its size and the total
-#     eject   Print a default config, to save in the app folder
-#
-#   serve and build pass every option after -- to Webpack, unchanged.
+# ARGUMENTS
+#   command   init    Write a template into a folder
+#             serve   Start the development server of an app
+#             build   Build an app into dist/ in its folder
+#             eject   Print a default config of VBlocks
 #
 # OPTIONS
-#   --template <name>       init: plain, xyflow or xyflow-tabs (default: plain)
-#   --only <app|plumbing>   init: write only the app or only the plumbing.
-#                           With app, init adds the app's dependencies to
-#                           the package.json in the parent folder of
-#                           <directory>. Without that file, init exits 3
-#   --mode <mode>           serve, build: the Webpack mode, development or
-#                           production (default: development for serve,
-#                           production for build)
-#   --prefix <directory>    serve, build: the app folder (default: the
-#                           current folder)
-#   --single-file, --single
-#                           build: one standalone dist/index.html, every
-#                           asset inlined
-#   --analyze               serve: run the bundle analyzer, on a free port
-#   --log-level <level>     serve, build: how much Webpack and its dev server
-#                           print: error, warn, info or verbose (default:
-#                           warn)
-#   -h, --help              Print this help
-#
-# ENVIRONMENT
-#   NO_COLOR   When non-empty, print without color, the tool icons or the
-#              header
+#   -h, --help   Print this help
 #
 # EXAMPLE
 #   npx @asd14/vblocks init my-app
-#   npx @asd14/vblocks init demos --only plumbing
-#   npx @asd14/vblocks init demos/flow --template xyflow --only app
-#   cd demos && npx vblocks build --prefix flow --single-file
-#   npx vblocks serve -- --host 0.0.0.0
-#   npx vblocks eject postcss > postcss.config.js
+#   npx vblocks serve --help
 #
 # EXIT CODES
 #   0   Done
-#   2   Invalid usage, or Webpack rejected an option or the config
-#   3   Could not run: a missing tool or parent package.json, a folder init
-#       could not add, or a failed copy, hook or Webpack run
+#   2   No command, or an unknown command
+#
+#   A command exits with the codes its help lists.
 #
 # SEE ALSO
-#   node, npm, webpack
+#   vblocks init, vblocks serve, vblocks build, vblocks eject
 
 # npm links the command to this file, so "$0" names the link. realpath follows
 # it to the package, where vblocks.d/ holds the commands

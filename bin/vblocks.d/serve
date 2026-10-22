@@ -1,8 +1,55 @@
 #!/bin/sh
 
-# vblocks serve [OPTIONS] [-- <webpack option>...]
+# NAME
+#   vblocks serve - Start the development server of an app
 #
-# Start the development server. vblocks runs this file. Never call it directly.
+# SYNOPSIS
+#   vblocks serve
+#     [--mode <development|production>]
+#     [--prefix <directory>]
+#     [--analyze]
+#     [--log-level <error|warn|info|verbose>]
+#     [-- <webpack option>...]
+#
+# DESCRIPTION
+#   The app folder holds src/index.tsx and src/index.html. A config in it,
+#   webpack.config.js, postcss.config.js or .swcrc, replaces the VBlocks
+#   default of the same name. So do src/public/robots.txt and
+#   src/public/favicon.svg.
+#
+#   Print the app folder, the VBlocks folder and the files Webpack runs with,
+#   then start the server.
+#
+# OPTIONS
+#   --mode <mode>              The Webpack mode, development or production
+#                              (default: development)
+#   --prefix <directory>       The app folder, which must exist (default: the
+#                              current folder)
+#   --analyze                  Run the bundle analyzer, on a free port. An
+#                              ejected webpack.config.js must read
+#                              env.analyze
+#   --log-level <level>        How much Webpack and its development server
+#                              print: error, warn, info or verbose (default:
+#                              warn)
+#   -- <webpack option>...     Pass each option to Webpack, unchanged
+#   -h, --help                 Print this help
+#
+# ENVIRONMENT
+#   NO_COLOR   When non-empty, print without color, the icons or the header
+#
+# EXAMPLE
+#   npx vblocks serve
+#   npx vblocks serve --prefix flow -- --host 0.0.0.0
+#
+# EXIT CODES
+#   0   Done
+#   2   Invalid usage, or Webpack rejected an option or the config
+#   3   Could not run: a missing tool, or a failed Webpack run
+#
+# SEE ALSO
+#   vblocks, vblocks build, vblocks eject, webpack
+
+# vblocks runs this file. Never call it directly.
 
 set -eu
 
@@ -27,6 +74,10 @@ _SHOULD_ANALYZE=""  # --analyze, "true" or ""
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
+    -h | --help)
+      _show_help "$0"
+      exit 0
+      ;;
     --prefix)
       [ "$#" -lt 2 ] && _fail 2 "--prefix needs a folder"
       _PREFIX_DIR=$2

@@ -1,9 +1,53 @@
 #!/bin/sh
 
-# vblocks init <directory> [--template <name>] [--only <app|plumbing>]
+# NAME
+#   vblocks init - Write a template into a folder
 #
-# Write a template into <directory>, then print each file it adds, updates or
-# drops. vblocks runs this file. Never call it directly.
+# SYNOPSIS
+#   vblocks init <directory>
+#     [--template <plain|xyflow|xyflow-tabs>]
+#     [--only <app|plumbing>]
+#
+# DESCRIPTION
+#   A template has two parts: the plumbing, which holds the files of the
+#   project folder, and the app, which holds the files of the app folder.
+#   After each part, run its post-init hooks in <directory>.
+#
+#   Print the project folder and each file init adds, updates or drops, then
+#   the next steps.
+#
+# ARGUMENTS
+#   directory   The folder to write into, missing or empty
+#
+# OPTIONS
+#   --template <name>   The template, plain, xyflow or xyflow-tabs (default:
+#                       plain)
+#   --only <part>       Write only the app or only the plumbing (default:
+#                       both). With app, init adds the template's
+#                       dependencies to the package.json of the project
+#                       folder, the parent of <directory>. That package.json
+#                       must exist
+#   -h, --help          Print this help
+#
+# ENVIRONMENT
+#   NO_COLOR   When non-empty, print without color or the header
+#
+# EXAMPLE
+#   npx @asd14/vblocks init my-app
+#   npx @asd14/vblocks init demos --only plumbing
+#   npx @asd14/vblocks init demos/flow --template xyflow --only app
+#
+# EXIT CODES
+#   0   Done
+#   2   Invalid usage, an unknown template, or a <directory> that is not empty
+#       or not a folder
+#   3   Could not run: a missing tool, no package.json in the project folder,
+#       a folder init could not add, or a failed copy or hook
+#
+# SEE ALSO
+#   vblocks, vblocks serve, node, npm
+
+# vblocks runs this file. Never call it directly.
 
 set -eu
 
@@ -203,6 +247,10 @@ _print_next_steps() {
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
+    -h | --help)
+      _show_help "$0"
+      exit 0
+      ;;
     --template)
       [ "$#" -lt 2 ] && _fail 2 -v available_templates "$(_list_templates)" "--template needs a name"
       _TEMPLATE=$2

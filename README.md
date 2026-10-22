@@ -382,6 +382,8 @@ app folder:
 
 ### Commands
 
+Each command prints its own help with `--help`, eg. `npx vblocks serve --help`.
+
 #### `vblocks init`
 
 Write a template's plumbing, app, or both into `<directory>`.

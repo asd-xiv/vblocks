@@ -1,9 +1,36 @@
 #!/bin/sh
 
-# vblocks eject <webpack|postcss|swc>
+# NAME
+#   vblocks eject - Print a default config of VBlocks
 #
-# Print a default config, to save in the app folder. vblocks runs this file.
-# Never call it directly.
+# SYNOPSIS
+#   vblocks eject <config>
+#
+# DESCRIPTION
+#   Print the config to stdout. Save it in the app folder, and serve and
+#   build run with it in place of the VBlocks default.
+#
+#   An ejected config loads its plugins and loaders from the project folder,
+#   not from VBlocks. Install them there.
+#
+# ARGUMENTS
+#   config   webpack, postcss or swc. Save each as webpack.config.js,
+#            postcss.config.js or .swcrc
+#
+# OPTIONS
+#   -h, --help   Print this help
+#
+# EXAMPLE
+#   npx vblocks eject postcss > postcss.config.js
+#
+# EXIT CODES
+#   0   Done
+#   2   Invalid usage
+#
+# SEE ALSO
+#   vblocks, vblocks serve, vblocks build
+
+# vblocks runs this file. Never call it directly.
 
 set -eu
 
@@ -24,6 +51,10 @@ _EJECT_CONFIG=""      # eject <config>
 [ "$#" -ne 1 ] && _fail 2 -v available_configs "webpack,postcss,swc" "eject needs one config"
 
 case "$1" in
+  -h | --help)
+    _show_help "$0"
+    exit 0
+    ;;
   webpack) _EJECT_CONFIG="webpack.config.js" ;;
   postcss) _EJECT_CONFIG="postcss.config.js" ;;
   swc) _EJECT_CONFIG=".swcrc" ;;
