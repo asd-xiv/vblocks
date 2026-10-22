@@ -1,6 +1,8 @@
 /** @typedef {import("webpack").Configuration} WebpackConfiguration */
 
 import fs from "node:fs"
+import { createRequire } from "node:module"
+import path from "node:path"
 import "webpack-dev-server"
 import ReactRefreshWebpackPlugin from "@pmmmwh/react-refresh-webpack-plugin"
 import CopyPlugin from "copy-webpack-plugin"
@@ -507,6 +509,12 @@ export default (
       extensions: [".tsx", ".ts", ".jsx", ".js"],
       alias: {
         "@self": `${entryDir}/src`,
+        // React Refresh imports the dev server's client. Use the one VBlocks runs
+        "webpack-dev-server": path.dirname(
+          createRequire(import.meta.url).resolve(
+            "webpack-dev-server/package.json"
+          )
+        ),
       },
     },
 
