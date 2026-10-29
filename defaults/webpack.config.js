@@ -26,6 +26,10 @@ const loadSwcConfig = (path, { hasReactRefresh }) => {
 
   return {
     ...typedConfig,
+    // VBlocks picks one .swcrc, from the app folder or its defaults. Without
+    // this, SWC also reads the .swcrc of the folder VBlocks runs in, eg. the
+    // package around the app
+    swcrc: false,
     env: {
       targets: "> 0.25%, not dead",
       ...typedConfig.env,
