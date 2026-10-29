@@ -4,6 +4,7 @@ import fs from "node:fs"
 import { createRequire } from "node:module"
 import path from "node:path"
 import "webpack-dev-server"
+import { buildLogger } from "@asd14/fancy-logger/node"
 import ReactRefreshWebpackPlugin from "@pmmmwh/react-refresh-webpack-plugin"
 import CopyPlugin from "copy-webpack-plugin"
 import DotenvPlugin from "dotenv-webpack"
@@ -11,6 +12,8 @@ import HtmlWebPackPlugin from "html-webpack-plugin"
 import MiniCssExtractPlugin from "mini-css-extract-plugin"
 import webpack from "webpack"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
+
+const logger = buildLogger({ namespace: "vblocks", level: "info" })
 
 /**
  * Read the SWC config, set the browser targets it lacks, and turn on React
@@ -109,17 +112,6 @@ const getCssLoaders = ({ classScope, isProduction, postcssConfigPath }) => [
 ]
 
 /**
- * Print one line of VBlocks: a verb, then its subject. The `[vblocks]` prefix
- * lets the reader tell it apart from the lines of Webpack
- *
- * @param {string} verb
- * @param {string} subject
- */
-const log = (verb, subject) => {
-  process.stdout.write(`[vblocks] ${verb.padEnd(7)} ${subject}\n`)
-}
-
-/**
  * Serve prints at most this many files per compile, then a count of the rest
  */
 const MAX_REPORTED_FILE_EVENTS = 5
@@ -134,7 +126,7 @@ const MAX_REPORTED_FILE_EVENTS = 5
 const reportFileEvents = appDir => compiler => {
   /** @type {Set<string> | undefined} */
   let previousFiles
-  /** @type {Array<[string, string]>} */
+  /** @type {Array<["Updated" | "Added" | "Dropped", string]>} */
   let fileEvents = []
 
   // The watcher also reports editor swap files and folders, eg. the src/ that
@@ -146,11 +138,11 @@ const reportFileEvents = appDir => compiler => {
         previousFiles?.has(file) &&
         fs.statSync(file, { throwIfNoEntry: false })?.isFile()
       ) {
-        fileEvents.push(["update", file])
+        fileEvents.push(["Updated", file])
       }
     }
     for (const file of watcher.removedFiles ?? []) {
-      if (previousFiles?.has(file)) fileEvents.push(["drop", file])
+      if (previousFiles?.has(file)) fileEvents.push(["Dropped", file])
     }
   })
 
@@ -165,15 +157,20 @@ const reportFileEvents = appDir => compiler => {
         .filter(file => !file.includes("/node_modules/"))
         .toSorted()
 
-      for (const file of addedFiles) fileEvents.push(["add", file])
+      for (const file of addedFiles) {
+        fileEvents.push(["Added", file])
+      }
     }
     previousFiles = files
 
-    for (const [verb, file] of fileEvents.slice(0, MAX_REPORTED_FILE_EVENTS)) {
-      log(verb, file.replace(appDir, "$APP_DIR"))
+    const nextFileEvents = fileEvents.slice(0, MAX_REPORTED_FILE_EVENTS)
+    for (const [message, file] of nextFileEvents) {
+      logger.info(message, { file: file.replace(appDir, "$APP_DIR") })
     }
     if (fileEvents.length > MAX_REPORTED_FILE_EVENTS) {
-      log("…", `and ${fileEvents.length - MAX_REPORTED_FILE_EVENTS} more`)
+      logger.info("More files", {
+        count: fileEvents.length - MAX_REPORTED_FILE_EVENTS,
+      })
     }
   })
 }
@@ -445,10 +442,14 @@ export default (
             if (typeof address !== "object" || address === null) return
 
             const { port } = address
-            log("serve", `http://localhost:${port}`)
+            logger.info("Started the server", {
+              url: `http://localhost:${port}`,
+            })
 
             if (developmentServer.options.host !== "localhost") {
-              log("expose", `${developmentServer.options.host}:${port}`)
+              logger.info("Exposed the server to the network", {
+                address: `${developmentServer.options.host}:${port}`,
+              })
             }
           },
 
