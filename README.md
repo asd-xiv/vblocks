@@ -379,6 +379,10 @@ app folder:
     }
    ```
 
+> [!NOTE]  
+> An import may name the file tsc emits, eg. `./button.js` for `button.tsx`, as
+> TypeScript's `nodenext` resolution asks. VBlocks finds the source behind it.
+
 3. **Ensure `index.tsx` and `index.html` are in `src/`**
 
 > [!NOTE]  

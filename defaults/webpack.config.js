@@ -528,6 +528,9 @@ export default (
 
     resolve: {
       extensions: [".tsx", ".ts", ".jsx", ".js"],
+      // A TypeScript import names the file tsc emits, eg. `./button.js` for
+      // `button.tsx`. Find the source behind it, as Vite does
+      extensionAlias: { ".js": [".ts", ".tsx", ".js"] },
       alias: {
         "@self": `${entryDir}/src`,
         // React Refresh imports the dev server's client. Use the one VBlocks runs
