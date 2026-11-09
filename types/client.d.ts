@@ -94,6 +94,22 @@ declare module "*.mdx" {
 }
 
 /**
+ * The text of the file, as Vite's `?raw` gives it. No loader changes it.
+ *
+ * @example
+ * import { Variants } from "./variants.js"
+ * import variantsSource from "./variants.tsx?raw"
+ *
+ * <Variants />
+ * <pre>{variantsSource}</pre>
+ */
+declare module "*?raw" {
+  const source: string
+
+  export default source
+}
+
+/**
  * The `.env` variables Webpack writes into the bundle. The browser has no
  * other part of Node's `process`.
  *

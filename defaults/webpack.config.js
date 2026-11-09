@@ -271,6 +271,11 @@ const STATS_BY_LOG_LEVEL = /** @type {const} */ ({
 })
 
 /**
+ * The query that imports a file as text, as in Vite, eg. `./file.tsx?raw`
+ */
+const RAW_QUERY = /[?&]raw(?:&|$)/
+
+/**
  * @typedef {Object} VBlocksProps
  *
  * @property {"production"|"development"} mode
@@ -349,9 +354,15 @@ export default (
 
     module: {
       rules: [
+        // If `?raw`, return the file contents. Every other rule skips `?raw`
+        {
+          resourceQuery: RAW_QUERY,
+          type: "asset/source",
+        },
         {
           test: /\.(ts|tsx)$/,
           exclude: /node_modules/,
+          resourceQuery: { not: [RAW_QUERY] },
           use: {
             loader: "swc-loader",
             options: swcConfig,
@@ -360,6 +371,7 @@ export default (
         {
           test: /\.mdx?$/,
           exclude: /node_modules/,
+          resourceQuery: { not: [RAW_QUERY] },
           use: [
             { loader: "swc-loader", options: swcConfig },
             { loader: "@mdx-js/loader" },
@@ -367,6 +379,7 @@ export default (
         },
         {
           test: /\.module\.css$/,
+          resourceQuery: { not: [RAW_QUERY] },
           use: getCssLoaders({
             classScope: "local",
             isProduction,
@@ -376,6 +389,7 @@ export default (
         {
           test: /\.css$/,
           exclude: /\.module\.css$/,
+          resourceQuery: { not: [RAW_QUERY] },
           use: getCssLoaders({
             classScope: "global",
             isProduction,
@@ -384,6 +398,7 @@ export default (
         },
         {
           test: /\.(jpg|gif|png|svg)$/,
+          resourceQuery: { not: [RAW_QUERY] },
           ...(isSingle
             ? { type: "asset/inline" }
             : {
@@ -397,6 +412,7 @@ export default (
         },
         {
           test: /\.(woff|woff2|ttf|eot)$/,
+          resourceQuery: { not: [RAW_QUERY] },
           ...(isSingle
             ? { type: "asset/inline" }
             : {

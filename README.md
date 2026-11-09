@@ -45,6 +45,7 @@ to write, read or fix
   - [Use environment variables](#use-environment-variables)
   - [Stop using `../../../` everywhere](#stop-using--everywhere)
   - [Use CSS Modules](#use-css-modules)
+  - [Import a file as text](#import-a-file-as-text)
   - [Replace a default config](#replace-a-default-config)
   - [Style with Tailwind](#style-with-tailwind)
   - [Add VBlocks to an existing project](#add-vblocks-to-an-existing-project)
@@ -258,6 +259,19 @@ import { Component } from "@self/components"
 
 > [!NOTE]  
 > The [client types](types/client.d.ts) declare `.css`, image and font imports.
+
+### Import a file as text
+
+Add `?raw` to the import path. VBlocks hands over the file's contents as text,
+as Vite does:
+
+```tsx
+import greeting from "./greeting.txt?raw"
+// greeting => "Hello from a text file\n"
+```
+
+> [!NOTE]  
+> The [client types](types/client.d.ts) type each `?raw` import as a `string`.
 
 ### Replace a default config
 
