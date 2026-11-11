@@ -1,7 +1,7 @@
 #!/bin/sh
 
-# Runs in the app folder, after `vblocks init` copies the app files. npm writes
-# the nearest package.json, the project root's
+# Runs in the app folder, after `vblocks init` copies the app files. npm commands
+# write in the nearest package.json, ie. project root
 
 set -eu
 

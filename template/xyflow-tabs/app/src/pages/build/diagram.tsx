@@ -17,9 +17,9 @@ import {
   type OnSelectionChangeFunc,
 } from "@xyflow/react"
 
-import { CELL_SIZE, toPixels } from "@self/utils/grid"
+import { CELL_SIZE, toPixels } from "@self/utils/grid.ts"
 
-import { ZoomLevel } from "@self/ui/zoom-level"
+import { ZoomLevel } from "@self/ui/zoom-level.tsx"
 
 type StepNode = Node<{ label: string; detail: string }, "step">
 

@@ -1,13 +1,9 @@
 import { useState } from "react"
-import { createRoot } from "react-dom/client"
 
-import { BuildDetails } from "./pages/build/details"
-import { BuildDiagram } from "./pages/build/diagram"
-import { ServeDetails } from "./pages/serve/details"
-import { ServeDiagram } from "./pages/serve/diagram"
-
-import "@xyflow/react/dist/style.css"
-import "./index.css"
+import { BuildDetails } from "./pages/build/details.tsx"
+import { BuildDiagram } from "./pages/build/diagram.tsx"
+import { ServeDetails } from "./pages/serve/details.tsx"
+import { ServeDiagram } from "./pages/serve/diagram.tsx"
 
 /**
  * The tabs of the diagram. For a new tab, add a folder in `pages/` with a
@@ -81,10 +77,4 @@ const App = () => {
   )
 }
 
-const root = document.querySelector("#root")
-
-if (!root) {
-  throw new Error("index.html has no #root element")
-}
-
-createRoot(root).render(<App />)
+export { App }

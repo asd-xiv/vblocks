@@ -1,3 +1,4 @@
 /* Scan only this app. With `--prefix`, you run VBlocks from the project folder,
    where Tailwind would also scan every other app */
 @import "tailwindcss" source(".");
+@import "@xyflow/react/dist/style.css";

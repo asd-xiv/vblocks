@@ -354,7 +354,7 @@ export default (
 
     module: {
       rules: [
-        // If `?raw`, return the file contents. Every other rule skips `?raw`
+        // If `?raw`, return the file contents and skip every other rule
         {
           resourceQuery: RAW_QUERY,
           type: "asset/source",

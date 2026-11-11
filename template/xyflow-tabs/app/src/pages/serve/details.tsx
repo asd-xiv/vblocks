@@ -1,4 +1,4 @@
-import { serveEdges, serveNodes } from "./diagram"
+import { serveEdges, serveNodes } from "./diagram.tsx"
 
 type ServeDetailsProps = {
   selectedId: string

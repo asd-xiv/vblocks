@@ -3,19 +3,23 @@
 set -eu
 
 # NAME
-#   verify-templates - Build every template `vblocks init` writes
+#   verify-templates - Typecheck and build every template `vblocks init` writes
 #
 # SYNOPSIS
 #   verify-templates [OPTIONS]
 #
 # DESCRIPTION
-#   For each template in `template/`, runs `vblocks init` into `tmp/<name>`,
-#   then `vblocks build` and `vblocks build --single-file` there. A template is
-#   a folder whose name has no `_` prefix.
+#   For each template in `template/`, runs `vblocks init` into
+#   `tmp/verify-templates/<name>`, then `tsc`, `vblocks build` and
+#   `vblocks build --single-file` there. A template is a folder whose name has
+#   no `_` prefix.
 #
-#   Then runs `vblocks init --only plumbing` into `tmp/_apps`, adds one app per
-#   template with `--only app`, and builds each from `tmp/_apps` with
-#   `--prefix`.
+#   Then runs `vblocks init --only plumbing` into
+#   `tmp/verify-templates/<name>_only-app`, adds the template there as the app
+#   `demo` with `--only app`, and builds it with `--prefix`.
+#
+#   SWC strips the types without checking them. Only `tsc` finds a type error.
+#   The app has the same `src/` and `tsconfig.json`, so it skips `tsc`.
 #
 #   Installs nothing. Each project resolves its dependencies from the
 #   `node_modules` of this repo, so a dependency of a template must also be a
@@ -28,16 +32,20 @@ set -eu
 #   tools/verify-templates
 #
 # EXIT CODES
-#   0   Every template built
+#   0   Every template typechecked and built
 #   2   Invalid usage
-#   3   A template or an app did not scaffold or build
+#   3   A template or an app did not scaffold, typecheck or build
 #
 # SEE ALSO
 #   bin/vblocks
 
-ROOT_DIR=$(dirname "$(dirname "$(realpath "$0")")")
-VBLOCKS_SCRIPT="$ROOT_DIR/bin/vblocks"
-OUT_DIR="$ROOT_DIR/tmp"
+VBLOCKS_PKG_ROOT_DIR=$(dirname "$(dirname "$(realpath "$0")")")
+VBLOCKS_CMD="$VBLOCKS_PKG_ROOT_DIR/bin/vblocks"
+# Use the `tsc` of this repo, as with the dependencies of the templates
+TSC_CMD=$(node -p \
+  'require.resolve("typescript/bin/tsc", { paths: [process.argv[1]] })' \
+  "$VBLOCKS_PKG_ROOT_DIR")
+TEMP_DIR="$VBLOCKS_PKG_ROOT_DIR/tmp/verify-templates"
 
 # ╭───
 # │ Primitives
@@ -45,40 +53,39 @@ OUT_DIR="$ROOT_DIR/tmp"
 
 # build_template <name>
 #
-# Scaffold the template <name> into `tmp/<name>` and build it both ways.
+# Scaffold, typecheck and build a template
 build_template() {
-  build_dir="$OUT_DIR/$1"
+  bt_root_dir="$TEMP_DIR/$1"
 
-  rm -rf -- "$build_dir"
-  "$VBLOCKS_SCRIPT" init "$build_dir" --template "$1"
+  rm -rf -- "$bt_root_dir"
+  "$VBLOCKS_CMD" init "$bt_root_dir" --template "$1"
 
+  # wrap in subshell to revert `cd`
   (
-    cd -- "$build_dir"
-    "$VBLOCKS_SCRIPT" build
-    "$VBLOCKS_SCRIPT" build --single-file
+    cd -- "$bt_root_dir"
+    node "$TSC_CMD" --project .
+    "$VBLOCKS_CMD" build
+    "$VBLOCKS_CMD" build --single-file
   )
 }
 
-# build_apps <name>...
+# build_app <name>
 #
-# Scaffold the plumbing into `tmp/_apps` and one app per template <name> inside
-# it, then build each app from `tmp/_apps`.
-build_apps() {
-  apps_dir="$OUT_DIR/_apps"
+# Scaffold the plumbing, add the template <name> as the app `demo`, then build
+# it with `--prefix`
+build_app() {
+  ba_root_dir="$TEMP_DIR/$1_only-app"
+  ba_app_name="demo"
+  ba_app_dir="$ba_root_dir/$ba_app_name"
 
-  rm -rf -- "$apps_dir"
-  "$VBLOCKS_SCRIPT" init "$apps_dir" --only plumbing || return 1
+  rm -rf -- "$ba_root_dir"
+  "$VBLOCKS_CMD" init "$ba_root_dir" --only plumbing
+  "$VBLOCKS_CMD" init "$ba_app_dir" --template "$1" --only app
 
-  for apps_template in "$@"; do
-    "$VBLOCKS_SCRIPT" init "$apps_dir/$apps_template" \
-      --template "$apps_template" --only app || return 1
-  done
-
+  # wrap in subshell to revert `cd`
   (
-    cd -- "$apps_dir" || exit 1
-    for apps_template in "$@"; do
-      "$VBLOCKS_SCRIPT" build --prefix "$apps_template" --single-file || exit 1
-    done
+    cd -- "$ba_root_dir"
+    "$VBLOCKS_CMD" build --prefix "$ba_app_name" --single-file
   )
 }
 
@@ -102,27 +109,35 @@ esac
 # │ Main
 # ╰───
 
-TEMPLATES=""
-for TEMPLATE_DIR in "$ROOT_DIR"/template/*/; do
-  [ -d "$TEMPLATE_DIR" ] || continue
-  TEMPLATE=$(basename "$TEMPLATE_DIR")
+CURRENT_STEP=""
 
-  case "$TEMPLATE" in
+# report_failure
+#
+# On a failed exit, name CURRENT_STEP and exit 3, as EXIT CODES promises.
+# shellcheck disable=SC2329 # trap calls it
+report_failure() {
+  rf_status=$?
+  [ "$rf_status" -eq 0 ] && return 0
+
+  printf '%s did not scaffold, typecheck or build\n' "$CURRENT_STEP" >&2
+  exit 3
+}
+
+trap report_failure EXIT
+
+for TEMPLATE_DIR in "$VBLOCKS_PKG_ROOT_DIR"/template/*/; do
+  [ -d "$TEMPLATE_DIR" ] || continue
+  TEMPLATE_NAME=$(basename "$TEMPLATE_DIR")
+
+  case "$TEMPLATE_NAME" in
     _*) continue ;;
   esac
 
-  if ! build_template "$TEMPLATE"; then
-    printf 'Template "%s" did not scaffold or build\n' "$TEMPLATE" >&2
-    exit 3
-  fi
+  CURRENT_STEP="Template \"$TEMPLATE_NAME\""
+  build_template "$TEMPLATE_NAME"
 
-  TEMPLATES="$TEMPLATES $TEMPLATE"
+  CURRENT_STEP="The app of template \"$TEMPLATE_NAME\""
+  build_app "$TEMPLATE_NAME"
 done
-
-# shellcheck disable=SC2086 # one template name per word
-if ! build_apps $TEMPLATES; then
-  printf 'The apps of "%s" did not scaffold or build\n' "$OUT_DIR/_apps" >&2
-  exit 3
-fi
 
 exit 0

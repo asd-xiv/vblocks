@@ -1,4 +1,4 @@
-import { buildEdges, buildNodes } from "./diagram"
+import { buildEdges, buildNodes } from "./diagram.tsx"
 
 const findLabel = (nodeId: string) =>
   buildNodes.find(node => node.id === nodeId)?.data.label ?? nodeId
