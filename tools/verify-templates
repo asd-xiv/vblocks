@@ -109,6 +109,12 @@ esac
 # │ Main
 # ╰───
 
+# A scaffold depends on @asd14/vblocks, which the node_modules of this repo
+# cannot contain. Link it, as an install of the scaffold would
+rm -rf -- "$TEMP_DIR"
+mkdir -p -- "$TEMP_DIR/node_modules/@asd14"
+ln -s -- "$VBLOCKS_PKG_ROOT_DIR" "$TEMP_DIR/node_modules/@asd14/vblocks"
+
 CURRENT_STEP=""
 
 # report_failure
