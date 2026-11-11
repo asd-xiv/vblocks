@@ -2,6 +2,8 @@
 
 # webpack.sh - The primitives of serve and build: the --mode and --log-level
 # guards, the defaults, the summary and the Webpack run
+#
+# Needs lib/log.sh and vblocks.sh. The command needs to source it before this file.
 
 # ╭───
 # │ Domain primitives

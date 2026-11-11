@@ -1,26 +1,26 @@
 #!/bin/sh
 
 # vblocks.sh - What every command of vblocks shares:
-# - lib.sh, the folders, the styles of the output and the header
+# - the folders, the styles of the output and the header
+#
+# Needs lib/log.sh. The command needs to source it before this file.
 
 # The caller sets _SCRIPT_DIR to the folder of vblocks.sh, then sources it
 : "${_SCRIPT_DIR:?the caller sets _SCRIPT_DIR before it sources vblocks.sh}"
 
 _VB_DIR=$(dirname "$(dirname "$_SCRIPT_DIR")")
 
-# tools/update-lib downloads lib.sh from @asd14/posix-utils. Never edit lib.sh
-# here
-# shellcheck source=lib.sh
-. "$_SCRIPT_DIR/lib.sh"
-
 # _log reads LOG_NAMESPACE, LOG_LEVEL and NO_LOG_TIME.
 #
 # - NO_LOG_TIME drops the time, which adds no fact to a message
 # - Send each stderr message through _ok, _info, _warn or _fail
 #   - Only the header, the summaries and `help` print on their own
-LOG_NAMESPACE="vblocks"
-LOG_LEVEL="info"
-NO_LOG_TIME="true"
+# shellcheck disable=SC2034 # lib/log.sh, which the command sources, reads them
+{
+  LOG_NAMESPACE="vblocks"
+  LOG_LEVEL="info"
+  NO_LOG_TIME="true"
+}
 
 # `cd` follows an exported CDPATH and prints the folder it picked, which
 # `$(cd ... && pwd)` would capture

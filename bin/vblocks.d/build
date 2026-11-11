@@ -54,6 +54,15 @@
 set -eu
 
 _SCRIPT_DIR=$(dirname "$0")
+# tools/update-lib downloads lib/ from posix-utils, never edit it here
+# shellcheck source=lib/log.sh
+. "$_SCRIPT_DIR/lib/log.sh"
+# shellcheck source=lib/validation.sh
+. "$_SCRIPT_DIR/lib/validation.sh"
+# shellcheck source=lib/guard.sh
+. "$_SCRIPT_DIR/lib/guard.sh"
+# shellcheck source=lib/help.sh
+. "$_SCRIPT_DIR/lib/help.sh"
 # shellcheck source=vblocks.sh
 . "$_SCRIPT_DIR/vblocks.sh"
 # shellcheck source=webpack.sh

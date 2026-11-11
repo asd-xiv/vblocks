@@ -3,45 +3,57 @@
 set -eu
 
 # NAME
-#   update-lib - Download lib.sh of posix-utils into bin/vblocks.d/
+#   update-lib - Download the posix-utils lib files vblocks uses into
+#   bin/vblocks.d/lib/
 #
 # SYNOPSIS
 #   update-lib
 #
 # DESCRIPTION
-#   Replaces bin/vblocks.d/lib.sh with the one of posix-utils at LIB_VERSION.
-#   Edit LIB_VERSION below to move to another release, then review the diff of
-#   lib.sh. Never edit lib.sh by hand, the next update replaces it.
+#   Replaces bin/vblocks.d/lib/ with the files of LIB_FILES, from bin/lib/ of
+#   posix-utils at LIB_VERSION. Edit LIB_VERSION below to move to another
+#   release, then review the diff of bin/vblocks.d/lib/. Never edit those files
+#   by hand, the next update replaces them.
+#
+#   List a file in LIB_FILES after the files its header says it needs. Each
+#   command sources the files it uses in the same order. A sourced file never
+#   sources another.
 #
 # EXAMPLE
 #   tools/update-lib
 #
 # EXIT CODES
-#   0   bin/vblocks.d/lib.sh holds the pinned version
-#   3   curl is missing, or the download failed
+#   0   bin/vblocks.d/lib/ holds the pinned version
+#   3   curl is missing, or a download failed
 #
 # SEE ALSO
 #   curl, https://github.com/asd-xiv/posix-utils
 
 ROOT_DIR=$(dirname "$(dirname "$(realpath "$0")")")
-LIB_VERSION="v2.4.0" # a tag of posix-utils
-LIB_URL="https://raw.githubusercontent.com/asd-xiv/posix-utils/$LIB_VERSION/bin/lib.sh"
+LIB_VERSION="v5.0.0" # a tag of posix-utils
+LIB_FILES="log validation guard help"
+LIB_URL="https://raw.githubusercontent.com/asd-xiv/posix-utils/$LIB_VERSION/bin/lib"
+LIB_DIR="$ROOT_DIR/bin/vblocks.d/lib"
 
 if ! command -v curl >/dev/null 2>&1; then
   printf 'update-lib: curl is not installed\n' >&2
   exit 3
 fi
 
-# Download next to the target, so a failed download leaves lib.sh as it was
-TEMP_FILE=$(mktemp "$ROOT_DIR/bin/vblocks.d/lib.sh.XXXXXX")
-trap 'rm -f -- "$TEMP_FILE"' EXIT
+# Download next to the target, so a failed download leaves lib/ as it was
+TEMP_DIR=$(mktemp -d "$ROOT_DIR/bin/vblocks.d/lib.XXXXXX")
+trap 'rm -rf -- "$TEMP_DIR"' EXIT
 
-if ! curl -fsSL -- "$LIB_URL" >"$TEMP_FILE"; then
-  printf 'update-lib: could not download %s\n' "$LIB_URL" >&2
-  exit 3
-fi
+for LIB_FILE in $LIB_FILES; do
+  if ! curl -fsSL -- "$LIB_URL/$LIB_FILE.sh" >"$TEMP_DIR/$LIB_FILE.sh"; then
+    printf 'update-lib: could not download %s\n' "$LIB_URL/$LIB_FILE.sh" >&2
+    exit 3
+  fi
+  chmod 644 -- "$TEMP_DIR/$LIB_FILE.sh"
+done
 
-chmod 644 -- "$TEMP_FILE"
-mv -- "$TEMP_FILE" "$ROOT_DIR/bin/vblocks.d/lib.sh"
-printf 'update-lib: bin/vblocks.d/lib.sh is posix-utils %s\n' "$LIB_VERSION" >&2
+chmod 755 -- "$TEMP_DIR"
+rm -rf -- "$LIB_DIR"
+mv -- "$TEMP_DIR" "$LIB_DIR"
+printf 'update-lib: bin/vblocks.d/lib/ is posix-utils %s\n' "$LIB_VERSION" >&2
 exit 0

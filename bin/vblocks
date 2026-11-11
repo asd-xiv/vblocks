@@ -37,6 +37,10 @@ set -eu
 # npm links the command to this file, so "$0" names the link. realpath follows
 # it to the package, where vblocks.d/ holds the commands
 _SCRIPT_DIR="$(dirname "$(realpath "$0")")/vblocks.d"
+# shellcheck source=vblocks.d/lib/log.sh
+. "$_SCRIPT_DIR/lib/log.sh"
+# shellcheck source=vblocks.d/lib/help.sh
+. "$_SCRIPT_DIR/lib/help.sh"
 # shellcheck source=vblocks.d/vblocks.sh
 . "$_SCRIPT_DIR/vblocks.sh"
 
