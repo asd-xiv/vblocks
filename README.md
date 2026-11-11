@@ -31,9 +31,9 @@ installed packages
 The agent's context contains only the app: no Webpack, PostCSS or TypeScript
 config to write, read or fix
 
-- [Agentation](#agentation) in development: click an element and write what to
-  change. The agent gets the note with the element's selector, text and React
-  components
+- [Agentation](https://www.agentation.com) in development: click an element and
+  write what to change. The agent gets the note with the element's selector,
+  text and React components
 - A terminal gets color and a header. An agent reads through a pipe, and gets
   only the facts
 
@@ -186,7 +186,6 @@ the definitions in.
 | **Plumbing**       | The project files `init` writes: `package.json`, `.gitignore` |
 | **Project folder** | The folder with `package.json`                                |
 | **App folder**     | The folder with `src/index.tsx` and `src/index.html`          |
-| **Bundle**         | The files `build` writes to `dist/`                           |
 
 ## How to
 
