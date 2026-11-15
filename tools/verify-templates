@@ -7,10 +7,10 @@ set -eu
 #   writes
 #
 # SYNOPSIS
-#   verify-templates [OPTIONS]
+#   verify-templates [OPTIONS] [<template>]
 #
 # DESCRIPTION
-#   For each template in `template/`, runs `vblocks init` into
+#   For <template>, or each template in `template/`, runs `vblocks init` into
 #   `tmp/verify-templates/<name>`, then `tsc`, `vblocks build` and
 #   `vblocks build --single-file` there. A template is a folder whose name has
 #   no `_` prefix.
@@ -29,11 +29,16 @@ set -eu
 #   `node_modules` of this repo, so a dependency of a template must also be a
 #   `devDependencies` entry here.
 #
+# ARGUMENTS
+#   template    The one template to verify, eg. plain (default: every
+#               template). CI runs one job per template
+#
 # OPTIONS
 #   -h, --help    Print this help
 #
 # EXAMPLE
 #   tools/verify-templates
+#   tools/verify-templates xyflow
 #
 # EXIT CODES
 #   0   Every template typechecked, built and served
@@ -165,18 +170,30 @@ build_app() {
 # │ Bootstrap
 # ╰───
 
-case "${1:-}" in
-  -h | --help)
+case "$#:${1:-}" in
+  1:-h | 1:--help)
     sed -n '/^# NAME$/,/^$/p' "$0" | sed 's/^# \{0,1\}//'
     exit 0
     ;;
-  "") ;;
+  # No positional, or one that is not a flag
+  0: | 1:[!-]*) ;;
   *)
-    printf 'Usage: verify-templates [-h | --help]\n' >&2
+    printf 'Usage: verify-templates [-h | --help] [<template>]\n' >&2
     exit 2
     ;;
 esac
 
+# Verify <template>, or each template `vblocks init --list` prints
+TEMPLATE_NAMES=$("$VBLOCKS_CMD" init --list)
+
+if [ "$#" -eq 1 ]; then
+  if ! printf '%s\n' "$TEMPLATE_NAMES" | grep -Fqx -- "$1"; then
+    printf 'Not a template: %s\n' "$1" >&2
+    exit 2
+  fi
+
+  TEMPLATE_NAMES=$1
+fi
 
 # ╭───
 # │ Main
@@ -215,13 +232,8 @@ trap finish_run EXIT
 trap 'finish_run INT' INT
 trap 'finish_run TERM' TERM
 
-for TEMPLATE_DIR in "$VBLOCKS_PKG_ROOT_DIR"/template/*/; do
-  [ -d "$TEMPLATE_DIR" ] || continue
-  TEMPLATE_NAME=$(basename "$TEMPLATE_DIR")
-
-  case "$TEMPLATE_NAME" in
-    _*) continue ;;
-  esac
+# shellcheck disable=SC2086 # one name per line, each a slug
+for TEMPLATE_NAME in $TEMPLATE_NAMES; do
   CURRENT_STEP="Template \"$TEMPLATE_NAME\""
   build_template "$TEMPLATE_NAME"
   serve_template "$TEMPLATE_NAME"

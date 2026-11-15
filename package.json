@@ -57,8 +57,7 @@
     "typecheck:code": "tsc --noEmit --project ./.tsconfig/code.json",
     "typecheck:client-types": "tsc --noEmit --project ./.tsconfig/client-types.json",
     "typecheck": "npm run typecheck:code && npm run typecheck:client-types",
-    "unit-test:template": "tools/verify-templates",
-    "unit-test": "npm run unit-test:template"
+    "unit-test": "tools/verify-templates"
   },
   "dependencies": {
     "@asd14/fancy-logger": "^2.0.0",

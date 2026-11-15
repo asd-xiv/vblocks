@@ -55,9 +55,27 @@ jobs:
       - name: Run type checking
         run: npm run typecheck
 
-  unit-test:
-    name: Unit Test
+  list-templates:
+    name: List templates
     runs-on: ubuntu-latest
+    outputs:
+      templates: ${{ steps.list.outputs.templates }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: List templates
+        id: list
+        run: printf 'templates=%s\n' "$(bin/vblocks init --list | jq -nRc '[inputs]')" >> "$GITHUB_OUTPUT"
+
+  unit-test:
+    name: Unit Test (${{ matrix.template }})
+    needs: [list-templates]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        template: ${{ fromJSON(needs.list-templates.outputs.templates) }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
@@ -74,4 +92,6 @@ jobs:
           key: node-modules-${{ inputs.cache-key }}
 
       - name: Run unit tests
-        run: npm run unit-test
+        env:
+          TEMPLATE: ${{ matrix.template }}
+        run: npm run unit-test -- "$TEMPLATE"
