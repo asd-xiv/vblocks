@@ -417,14 +417,17 @@ Write a template's plumbing, app, or both into `<directory>`.
 
 ```text
 vblocks init <directory>
-  [--template <plain|xyflow|xyflow-tabs>]
+  [--template <name>]
   [--only <app|plumbing>]
+vblocks init --list
 ```
 
 - `<directory>`
   - The folder to write into. It must be missing or empty
 - `--template` (default: `plain`)
   - The template to write, see [Templates](#templates)
+- `--list`
+  - Print the templates, one per line
 - `--only` (default: both)
   - Write one part of the template
   - `plumbing`: `package.json`, `.gitignore`

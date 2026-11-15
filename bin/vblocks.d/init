@@ -5,8 +5,9 @@
 #
 # SYNOPSIS
 #   vblocks init <directory>
-#     [--template <plain|xyflow|xyflow-tabs>]
+#     [--template <name>]
 #     [--only <app|plumbing>]
+#   vblocks init --list
 #
 # DESCRIPTION
 #   A template has two parts: the plumbing, which holds the files of the
@@ -20,8 +21,8 @@
 #   directory   The folder to write into, missing or empty
 #
 # OPTIONS
-#   --template <name>   The template, plain, xyflow or xyflow-tabs (default:
-#                       plain)
+#   --template <name>   The template, one of --list (default: plain)
+#   --list              Print the templates, one per line
 #   --only <part>       Write only the app or only the plumbing (default:
 #                       both). With app, init adds the template's
 #                       dependencies to the package.json of the project
@@ -34,6 +35,7 @@
 #
 # EXAMPLE
 #   npx @asd14/vblocks init my-app
+#   npx @asd14/vblocks init --list
 #   npx @asd14/vblocks init demos --only plumbing
 #   npx @asd14/vblocks init demos/flow --template xyflow --only app
 #
@@ -112,7 +114,9 @@ _quote_path() {
 # Print the template names, one per line. A template is a folder in
 # `template/` whose name has no `_` prefix.
 _list_templates() {
-  for lt_dir in "$_VB_DIR"/template/*/; do
+  # No trailing "/" in the glob, so "xyflow" sorts before "xyflow-tabs" in
+  # every locale
+  for lt_dir in "$_VB_DIR"/template/*; do
     [ -d "$lt_dir" ] || continue
     lt_name=$(basename "$lt_dir")
 
@@ -258,6 +262,10 @@ while [ "$#" -gt 0 ]; do
   case "$1" in
     -h | --help)
       _show_help "$0"
+      exit 0
+      ;;
+    --list)
+      _list_templates
       exit 0
       ;;
     --template)
