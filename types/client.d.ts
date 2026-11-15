@@ -8,12 +8,9 @@
 
 declare module "*.module.css" {
   /**
-   * Class names by their camelCase key, `.my-class` is `styles.myClass`.
-   *
-   * Typed `any` so `styles.myClass` passes `noPropertyAccessFromIndexSignature`.
+   * Class names by their camelCase key, eg. `styles["myClass"]` for `.my-class`.
    */
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const classNames: any
+  const classNames: { readonly [key: string]: string }
 
   export default classNames
 }

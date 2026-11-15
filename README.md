@@ -260,10 +260,10 @@ import { Button } from "@self/components/button.tsx"
    /* src/button.tsx */
    import styles from "./button.module.css"
 
-   export const Button = () => <button className={styles.primaryButton} />
+   export const Button = () => <button className={styles["primaryButton"]} />
    ```
 
-- **camelCase keys** - `.primary-button` becomes `styles.primaryButton`
+- **camelCase keys** - the key of each class is its name in camelCase
 - **Class names** - a bare hash in `production` mode, `[local]__[hash]` in
   `development` mode
 

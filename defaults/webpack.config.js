@@ -68,7 +68,7 @@ const getCssModuleOptions = isProduction => ({
   // import * as styles from './styles.module.css'
   namedExport: false,
 
-  // Map `.my-class` in CSS to `styles.myClass` in JavaScript
+  // Map `.my-class` in CSS to `styles["myClass"]` in JavaScript
   exportLocalsConvention: "camelCase",
 
   // Production names a class by its hash alone. Development puts the class
