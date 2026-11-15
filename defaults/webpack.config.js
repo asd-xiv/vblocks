@@ -265,6 +265,7 @@ const inlineAssets = compiler => {
  * @property {boolean} [single] - Build one standalone index.html, every asset inlined
  * @property {boolean} [analyze] - Run the bundle analyzer next to the dev server
  * @property {"error"|"warn"|"info"|"verbose"} [logLevel] - How much Webpack and its dev server print
+ * @property {boolean} [WEBPACK_SERVE] - webpack-cli sets it for `serve`, and its aliases `server` and `s`
  */
 
 /**
@@ -303,11 +304,12 @@ export default (
     single,
     analyze,
     logLevel = "warn",
+    WEBPACK_SERVE,
   },
   { mode }
 ) => {
   const isProduction = mode === "production"
-  const isServe = process.argv[2] == "serve"
+  const isServe = Boolean(WEBPACK_SERVE)
   const isSingle = Boolean(single) && !isServe
   const isAnalyze = Boolean(analyze) && isServe
   const hasReactRefresh = isServe && mode === "development"
