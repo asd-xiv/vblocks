@@ -3,7 +3,8 @@
 set -eu
 
 # NAME
-#   verify-templates - Typecheck and build every template `vblocks init` writes
+#   verify-templates - Typecheck, build and serve every template `vblocks init`
+#   writes
 #
 # SYNOPSIS
 #   verify-templates [OPTIONS]
@@ -13,6 +14,9 @@ set -eu
 #   `tmp/verify-templates/<name>`, then `tsc`, `vblocks build` and
 #   `vblocks build --single-file` there. A template is a folder whose name has
 #   no `_` prefix.
+#
+#   Then runs `vblocks serve` there, waits until Webpack compiles and the
+#   server starts, and requests the page. It fails after 60 seconds.
 #
 #   Then runs `vblocks init --only plumbing` into
 #   `tmp/verify-templates/<name>_only-app`, adds the template there as the app
@@ -32,9 +36,9 @@ set -eu
 #   tools/verify-templates
 #
 # EXIT CODES
-#   0   Every template typechecked and built
+#   0   Every template typechecked, built and served
 #   2   Invalid usage
-#   3   A template or an app did not scaffold, typecheck or build
+#   3   A template or an app did not scaffold, typecheck, build or serve
 #
 # SEE ALSO
 #   bin/vblocks
@@ -46,6 +50,7 @@ TSC_CMD=$(node -p \
   'require.resolve("typescript/bin/tsc", { paths: [process.argv[1]] })' \
   "$VBLOCKS_PKG_ROOT_DIR")
 TEMP_DIR="$VBLOCKS_PKG_ROOT_DIR/tmp/verify-templates"
+SERVER_PID="" # the server serve_template runs, for stop_server
 
 # ╭───
 # │ Primitives
@@ -67,6 +72,73 @@ build_template() {
     "$VBLOCKS_CMD" build
     "$VBLOCKS_CMD" build --single-file
   )
+}
+
+# stop_process_tree <pid>
+#
+# Send TERM to <pid> and to each process it started. The serve script runs
+# Webpack as a child, which outlives a TERM to the script alone
+stop_process_tree() {
+  for spt_child_pid in $(ps -A -o pid= -o ppid= | awk -v ppid="$1" '$2 == ppid { print $1 }'); do
+    stop_process_tree "$spt_child_pid"
+  done
+
+  kill -- "$1" 2>/dev/null || true
+}
+
+# stop_server
+#
+# Stop the server serve_template runs, if any
+stop_server() {
+  if [ -n "$SERVER_PID" ]; then
+    stop_process_tree "$SERVER_PID"
+    wait "$SERVER_PID" 2>/dev/null || true
+    SERVER_PID=""
+  fi
+}
+
+# serve_template <name>
+#
+# Serve the scaffold of template <name>. Wait until Webpack compiles it and the
+# server starts, then request the page
+#
+# RETURNS
+#   1   Webpack failed, the server did not start in 60 seconds, or the page did
+#       not answer
+serve_template() {
+  st_log_file="$TEMP_DIR/$1.serve.log"
+
+  # NO_COLOR keeps the log plain for grep. --no-open keeps the browser closed
+  (cd -- "$TEMP_DIR/$1" && NO_COLOR=1 exec "$VBLOCKS_CMD" serve -- --no-open) \
+    > "$st_log_file" 2>&1 &
+  SERVER_PID=$!
+
+  # Webpack and the server each print one line, in either order
+  st_seconds=0
+  until grep -q "webpack compiled" "$st_log_file" &&
+    grep -q "Started the server" "$st_log_file"; do
+    if [ "$st_seconds" -ge 60 ] || ! kill -0 "$SERVER_PID" 2>/dev/null; then
+      cat -- "$st_log_file" >&2
+      return 1
+    fi
+
+    sleep 1
+    st_seconds=$((st_seconds + 1))
+  done
+
+  if ! grep -q "webpack compiled successfully" "$st_log_file"; then
+    cat -- "$st_log_file" >&2
+    return 1
+  fi
+
+  st_url=$(sed -n 's/.*url=\(http:[^ ]*\).*/\1/p' "$st_log_file")
+  node -e '
+    fetch(process.argv[1]).then(
+      response => process.exit(response.ok ? 0 : 1),
+      () => process.exit(1)
+    )' "$st_url"
+
+  stop_server
 }
 
 # build_app <name>
@@ -105,6 +177,7 @@ case "${1:-}" in
     ;;
 esac
 
+
 # ╭───
 # │ Main
 # ╰───
@@ -117,19 +190,30 @@ ln -s -- "$VBLOCKS_PKG_ROOT_DIR" "$TEMP_DIR/node_modules/@asd14/vblocks"
 
 CURRENT_STEP=""
 
-# report_failure
+# finish_run [<signal>]
 #
-# On a failed exit, name CURRENT_STEP and exit 3, as EXIT CODES promises.
+# Stop the server, which ignores INT and would outlive the script. Then end with
+# <signal>, or on a failed exit, name CURRENT_STEP and exit 3, as EXIT CODES
+# promises
 # shellcheck disable=SC2329 # trap calls it
-report_failure() {
-  rf_status=$?
-  [ "$rf_status" -eq 0 ] && return 0
+finish_run() {
+  fr_status=$?
+  trap - EXIT INT TERM
+  stop_server
 
-  printf '%s did not scaffold, typecheck or build\n' "$CURRENT_STEP" >&2
-  exit 3
+  if [ -n "${1:-}" ]; then
+    kill -s "$1" "$$"
+  fi
+
+  if [ "$fr_status" -ne 0 ]; then
+    printf '%s did not scaffold, typecheck, build or serve\n' "$CURRENT_STEP" >&2
+    exit 3
+  fi
 }
 
-trap report_failure EXIT
+trap finish_run EXIT
+trap 'finish_run INT' INT
+trap 'finish_run TERM' TERM
 
 for TEMPLATE_DIR in "$VBLOCKS_PKG_ROOT_DIR"/template/*/; do
   [ -d "$TEMPLATE_DIR" ] || continue
@@ -138,9 +222,9 @@ for TEMPLATE_DIR in "$VBLOCKS_PKG_ROOT_DIR"/template/*/; do
   case "$TEMPLATE_NAME" in
     _*) continue ;;
   esac
-
   CURRENT_STEP="Template \"$TEMPLATE_NAME\""
   build_template "$TEMPLATE_NAME"
+  serve_template "$TEMPLATE_NAME"
 
   CURRENT_STEP="The app of template \"$TEMPLATE_NAME\""
   build_app "$TEMPLATE_NAME"
