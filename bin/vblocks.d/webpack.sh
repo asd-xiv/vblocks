@@ -48,6 +48,16 @@ _pick_file() {
   fi
 }
 
+# _resolve_vblocks_file <request>
+#
+# Print the absolute path of <request>, eg. `webpack-cli/bin/cli.js`, as Node
+# resolves it from the VBlocks folder. npm nests or hoists each dependency of
+# VBlocks so that this lookup finds it.
+_resolve_vblocks_file() {
+  node -p 'require.resolve(process.argv[1], { paths: [process.argv[2]] })' \
+    "$1" "$_VB_DIR"
+}
+
 # _print_file_path <file> <app-dir>
 #
 # Print the path of <file>, its folder as $APP_DIR, or as $VBLOCKS_DIR in gray
@@ -91,12 +101,12 @@ _print_summary() {
 
 # _run_webpack <action> <webpack-config> [<webpack option>...]
 #
-# Run `webpack <action>` with <webpack-config> and the options, through the
-# webpack-cli of VBlocks.
+# Run `webpack <action>` with <webpack-config> and the options. Use the
+# webpack-cli, the webpack and the webpack-dev-server of VBlocks.
 #
 # EXIT
 #   2   Webpack rejected an option or the config
-#   3   Webpack failed
+#   3   Could not find a package of VBlocks, or Webpack failed
 _run_webpack() {
   rw_action=$1
   rw_config=$2
@@ -105,12 +115,27 @@ _run_webpack() {
   # Run the webpack-cli of VBlocks, the version VBlocks depends on. npx
   # would run the first one it finds from the current folder, or offer to
   # install one
-  rw_cli_file=$(node -p \
-    'require.resolve("webpack-cli/bin/cli.js", { paths: [process.argv[1]] })' \
-    "$_VB_DIR") || _fail 3 "Could not find the webpack-cli of VBlocks"
+  rw_cli_file=$(_resolve_vblocks_file webpack-cli/bin/cli.js) ||
+    _fail 3 "Could not find the webpack-cli of VBlocks"
 
+  # Pass webpack-cli the webpack and the webpack-dev-server of VBlocks.
+  # webpack-cli resolves both from its own folder, where npm can place another
+  # copy. webpack-cli declares webpack-dev-server only as an optional peer, so
+  # npm can place none there
+  rw_webpack_file=$(_resolve_vblocks_file webpack) ||
+    _fail 3 "Could not find the webpack of VBlocks"
+  rw_dev_server_file=$(_resolve_vblocks_file webpack-dev-server) ||
+    _fail 3 "Could not find the webpack-dev-server of VBlocks"
+
+  # The path picks the copy of VBlocks, but that copy first resolves
+  # webpack-cli from the current folder, and runs any other copy it finds.
+  # WEBPACK_CLI_SKIP_IMPORT_LOCAL skips that check
   rw_status=0
-  node "$rw_cli_file" "$rw_action" --config "$rw_config" "$@" || rw_status=$?
+  WEBPACK_CLI_SKIP_IMPORT_LOCAL=true \
+    WEBPACK_PACKAGE=$rw_webpack_file \
+    WEBPACK_DEV_SERVER_PACKAGE=$rw_dev_server_file \
+    node "$rw_cli_file" "$rw_action" --config "$rw_config" "$@" ||
+    rw_status=$?
 
   # webpack-cli exits 1 when the build has errors, 2 when an option or the
   # config is wrong

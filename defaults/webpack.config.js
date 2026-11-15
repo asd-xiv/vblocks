@@ -1,19 +1,23 @@
+/// <reference types="webpack-dev-server" />
 /** @typedef {import("webpack").Configuration} WebpackConfiguration */
 
 import fs from "node:fs"
 import { createRequire } from "node:module"
 import path from "node:path"
-import "webpack-dev-server"
 import { buildLogger } from "@asd14/fancy-logger/node"
 import ReactRefreshWebpackPlugin from "@pmmmwh/react-refresh-webpack-plugin"
 import CopyPlugin from "copy-webpack-plugin"
 import DotenvPlugin from "dotenv-webpack"
 import HtmlWebPackPlugin from "html-webpack-plugin"
 import MiniCssExtractPlugin from "mini-css-extract-plugin"
-import webpack from "webpack"
+import postcss from "postcss"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 
 const logger = buildLogger({ namespace: "vblocks", level: "info" })
+
+// Resolve each package from this file's folder. Webpack would resolve a loader
+// name from its `context`, the current folder by default
+const require = createRequire(import.meta.url)
 
 /**
  * Read the SWC config, set the browser targets it lacks, and turn on React
@@ -87,7 +91,7 @@ const getCssLoaders = ({ classScope, isProduction, postcssConfigPath }) => [
     loader: MiniCssExtractPlugin.loader,
   },
   {
-    loader: "css-loader",
+    loader: require.resolve("css-loader"),
     options: {
       // Resolve @import in CSS files
       import: true,
@@ -102,8 +106,11 @@ const getCssLoaders = ({ classScope, isProduction, postcssConfigPath }) => [
     },
   },
   {
-    loader: "postcss-loader",
+    loader: require.resolve("postcss-loader"),
     options: {
+      // Run the PostCSS this file imports, not the one postcss-loader resolves
+      // from its own folder
+      implementation: postcss,
       postcssOptions: {
         config: postcssConfigPath,
       },
@@ -305,6 +312,21 @@ export default (
   const isAnalyze = Boolean(analyze) && isServe
   const hasReactRefresh = isServe && mode === "development"
   const swcConfig = loadSwcConfig(swcConfigPath, { hasReactRefresh })
+  const swcLoader = {
+    loader: require.resolve("swc-loader"),
+    options: swcConfig,
+  }
+
+  // With `jsc.externalHelpers` (see default .swcrc), SWC imports its helpers
+  // into each app file it compiles.
+  // Resolve them from this file's folder, not from the app file's
+  const swcResolve = {
+    alias: {
+      "@swc/helpers": path.dirname(
+        require.resolve("@swc/helpers/package.json")
+      ),
+    },
+  }
 
   const paths = {
     appEntry: `${entryDir}/src/index.tsx`,
@@ -363,19 +385,15 @@ export default (
           test: /\.(ts|tsx)$/,
           exclude: /node_modules/,
           resourceQuery: { not: [RAW_QUERY] },
-          use: {
-            loader: "swc-loader",
-            options: swcConfig,
-          },
+          resolve: swcResolve,
+          use: swcLoader,
         },
         {
           test: /\.mdx?$/,
           exclude: /node_modules/,
           resourceQuery: { not: [RAW_QUERY] },
-          use: [
-            { loader: "swc-loader", options: swcConfig },
-            { loader: "@mdx-js/loader" },
-          ],
+          resolve: swcResolve,
+          use: [swcLoader, { loader: require.resolve("@mdx-js/loader") }],
         },
         {
           test: /\.module\.css$/,
@@ -509,8 +527,16 @@ export default (
           ],
         }),
 
-      // Without it, Webpack emits a second file for each dynamic `import()`
-      isSingle && new webpack.optimize.LimitChunkCountPlugin({ maxChunks: 1 }),
+      // Without it, Webpack emits a second file for each dynamic `import()`.
+      // Take the plugin from the compiler, the Webpack that runs this config
+      isSingle &&
+        /** @type {import("webpack").WebpackPluginFunction} */ (
+          compiler => {
+            new compiler.webpack.optimize.LimitChunkCountPlugin({
+              maxChunks: 1,
+            }).apply(compiler)
+          }
+        ),
 
       isSingle && inlineAssets,
 
@@ -531,13 +557,16 @@ export default (
       // A TypeScript import names the file tsc emits, eg. `./button.js` for
       // `button.tsx`. Find the source behind it, as Vite does
       extensionAlias: { ".js": [".ts", ".tsx", ".js"] },
+      // No alias for `react/jsx-runtime` or `react-refresh`. The app owns
+      // React, and the React Refresh plugin loads its own copy by path. A
+      // second copy of either keeps its own state, eg. React throws on each
+      // hook call
       alias: {
         "@self": `${entryDir}/src`,
-        // React Refresh imports the dev server's client. Use the one VBlocks runs
+        // React Refresh imports the dev server's client by name. Resolve it
+        // from this file's folder
         "webpack-dev-server": path.dirname(
-          createRequire(import.meta.url).resolve(
-            "webpack-dev-server/package.json"
-          )
+          require.resolve("webpack-dev-server/package.json")
         ),
       },
     },

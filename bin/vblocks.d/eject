@@ -11,7 +11,8 @@
 #   build run with it in place of the VBlocks default.
 #
 #   An ejected config loads its plugins and loaders from the project folder,
-#   not from VBlocks. Install them there.
+#   not from VBlocks. Install them there. webpack-cli, webpack and
+#   webpack-dev-server stay those of VBlocks.
 #
 # ARGUMENTS
 #   config   webpack, postcss or swc. Save each as webpack.config.js,

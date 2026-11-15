@@ -64,6 +64,7 @@
     "@asd14/fancy-logger": "^2.0.0",
     "@mdx-js/loader": "^3.1.1",
     "@pmmmwh/react-refresh-webpack-plugin": "^0.6.3",
+    "@swc/core": "^1.16.22",
     "@swc/helpers": "^0.5.24",
     "browserslist": "^4.29.5",
     "copy-webpack-plugin": "^14.0.0",
