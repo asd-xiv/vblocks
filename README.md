@@ -14,79 +14,50 @@ everything set up.
 -->
 
 **🔋 Maximal support**\
-SWC, PostCSS, CSS Modules, MDX, React Refresh, Dotenv
-
-<!--
-PARKED until SSG is finished, then name both outputs: SPA and SSG.
-
-**📄 Static website**
-Builds to `dist/`, for any static host
--->
+SWC, PostCSS, CSS Modules, MDX, React Refresh, `.env` files
 
 **📦 Several apps, one install**\
 Apps share one `package.json` and `node_modules/`. A new app reuses the
 installed packages
 
 **🤖 Optimized for AI agents**\
-The agent's context contains only the app: no Webpack, PostCSS or TypeScript
-config to write, read or fix
+The agent's context contains only the app. The agent does not write, read or fix
+a Webpack, PostCSS or SWC config
 
 - [Agentation](https://www.agentation.com) in development: click an element and
-  write what to change. The agent gets the note with the element's selector,
-  text and React components
+  write what to change. The agent gets the annotation with the element's
+  selector, text and React components
 - A terminal gets color and a header. An agent reads through a pipe, and gets
   only the facts
-
-> [!IMPORTANT]\
-> VBlocks needs Node `^22.22.3`, `^24.15.0` or `>=26.0`.
 
 ## Table of contents
 
 <!-- vim-markdown-toc GFM -->
 
 - [Quick Start](#quick-start)
-  - [Several apps in one project](#several-apps-in-one-project)
-- [Vocabulary](#vocabulary)
 - [How to](#how-to)
-  - [Use environment variables](#use-environment-variables)
-  - [Stop using `../../../` everywhere](#stop-using--everywhere)
+  - [Keep several apps in one project](#keep-several-apps-in-one-project)
+  - [Use `.env` variables](#use-env-variables)
+  - [Import from `src/` with `@self`](#import-from-src-with-self)
   - [Use CSS Modules](#use-css-modules)
   - [Import a file as text](#import-a-file-as-text)
+  - [Pick the browsers](#pick-the-browsers)
   - [Replace a default config](#replace-a-default-config)
   - [Style with Tailwind](#style-with-tailwind)
+  - [Send UI annotations to an AI agent](#send-ui-annotations-to-an-ai-agent)
+  - [Open the page from another device](#open-the-page-from-another-device)
+  - [Build a single HTML file](#build-a-single-html-file)
   - [Add VBlocks to an existing project](#add-vblocks-to-an-existing-project)
-- [References](#references)
-  - [Commands](#commands)
-    - [`vblocks init`](#vblocks-init)
-    - [`vblocks serve`](#vblocks-serve)
-      - [Agentation](#agentation)
-    - [`vblocks build`](#vblocks-build)
-    - [`vblocks eject`](#vblocks-eject)
-  - [Templates](#templates)
-    - [`plain`](#plain)
-    - [`xyflow`](#xyflow)
-    - [`xyflow-tabs`](#xyflow-tabs)
+- [More docs](#more-docs)
+- [Develop](#develop)
 - [License](#license)
 
 <!-- vim-markdown-toc -->
 
-<!--
-Order this README by three principles. Each settles one decision:
-
-- **Pain relief**, the order of sections. The section that relieves the most
-  pain for the least reading comes first
-- **Progressive disclosure**, the depth of a section. A section uses only what
-  the sections above it showed
-- **Colocation**, the place of a fact. A caveat sits on the step or option it
-  limits, in a NOTE when it is tangential or points at another section
-
-Each section is one Diátaxis type (https://diataxis.fr):
-- Quick Start -> Tutorial
-- How to -> How-to guides
-- Vocabulary, Commands and Templates -> Reference
--->
-
 ## Quick Start
+
+> [!IMPORTANT]\
+> VBlocks needs Node `^22.22.3`, `^24.15.0` or `>=26.0`.
 
 <!--
 Using "scaffold", the field's word for what `init` does, eg. Yeoman and
@@ -124,19 +95,25 @@ scaffolders spots the folder at a glance, as with `vite-project` and
    npx vblocks serve
    ```
 
+   The server runs at `http://localhost:8080`, or the next free port. It opens
+   the page in the browser.
+
 3. **Build**
 
    ```sh
-   npx vblocks build               # production bundle in dist/
-   npx vblocks build --single-file # one dist/index.html, every asset inlined
+   npx vblocks build # production bundle in dist/
    ```
 
-### Several apps in one project
+## How to
+
+### Keep several apps in one project
 
 Several apps, eg. demos or MVP sketches, can share one `package.json` and one
-`node_modules/`:
+`node_modules/`. The [project folder](docs/REFERENCE.md#domain-vocabulary)
+contains the plumbing, and each
+[app folder](docs/REFERENCE.md#domain-vocabulary) contains one app:
 
-1. **Add the plumbing**
+1. **Create the project folder**
 
    ```sh
    npx @asd14/vblocks init sketches --only plumbing
@@ -174,27 +151,7 @@ Several apps, eg. demos or MVP sketches, can share one `package.json` and one
    npx vblocks serve --prefix flow-diagram
    ```
 
-## Vocabulary
-
-<!--
-Keep Vocabulary after Quick Start since the reader has no context to place
-the definitions in.
--->
-
-| Term               | Means                                                         |
-| :----------------- | :------------------------------------------------------------ |
-| **Plumbing**       | The project files `init` writes: `package.json`, `.gitignore` |
-| **Project folder** | The folder with `package.json`                                |
-| **App folder**     | The folder with `src/index.tsx` and `src/index.html`          |
-
-## How to
-
-<!--
-Each ### names a pain as the task that relieves it. Order the guides by how
-early the Quick Start reader has the pain.
--->
-
-### Use environment variables
+### Use `.env` variables
 
 1. **Create a `.env` file in your app folder**
 
@@ -217,10 +174,10 @@ variable your code does not read.
 > the page can read it.
 
 > [!NOTE]\
-> The [client types](types/client.d.ts) declare `process.env` and nothing else
-> from Node, because Webpack replaces nothing else.
+> The [client types](types/client.d.ts) declare only `process.env`. The browser
+> has no other part of Node's `process`.
 
-### Stop using `../../../` everywhere
+### Import from `src/` with `@self`
 
 VBlocks resolves `@self` to the `src/` of your app folder:
 
@@ -232,8 +189,8 @@ import { Button } from "@self/components/button.tsx"
 > [!NOTE]\
 > VBlocks compiles TypeScript with SWC and does not typecheck. Run `tsc`
 > yourself. Your `tsconfig.json` needs the same alias as Webpack.  
-> The `tsconfig.json` that [`vblocks init`](#vblocks-init) writes already has
-> it. Otherwise, add:
+> The `tsconfig.json` that [`vblocks init`](docs/REFERENCE.md#vblocks-init)
+> writes already has it. Otherwise, add:
 >
 > ```diff
 >  {
@@ -263,17 +220,16 @@ import { Button } from "@self/components/button.tsx"
    export const Button = () => <button className={styles["primaryButton"]} />
    ```
 
-- **camelCase keys** - the key of each class is its name in camelCase
-- **Class names** - a bare hash in `production` mode, `[local]__[hash]` in
-  `development` mode
+Each class name is a bare hash in `production` mode, and `[local]__[hash]` in
+`development` mode.
 
 > [!NOTE]\
-> The [client types](types/client.d.ts) declare `.css`, image and font imports.
+> The [client types](types/client.d.ts) declare each `*.module.css` import as an
+> object of class names.
 
 ### Import a file as text
 
-Add `?raw` to the import path. The import returns the file's contents as a
-string, as in Vite:
+Add `?raw` to the import path, as in Vite:
 
 ```tsx
 import greeting from "./greeting.txt?raw"
@@ -281,32 +237,57 @@ import greeting from "./greeting.txt?raw"
 ```
 
 > [!NOTE]\
-> The [client types](types/client.d.ts) type each `?raw` import as a `string`.
+> The [client types](types/client.d.ts) declare each `?raw` import as a
+> `string`.
+
+### Pick the browsers
+
+SWC, Webpack and `postcss-preset-env` compile for the browsers of the app's
+browserslist config, from the app folder up:
+
+- a `.browserslistrc`
+- or the `browserslist` field of `package.json`
+
+Without one, they compile for the VBlocks default, `> 0.25%, not dead`.
+
+1. **Eject the default into your app folder**
+
+   ```sh
+   npx vblocks eject browserslist > .browserslistrc
+   ```
+
+2. **Update the query**, see
+   [the queries of browserslist](https://github.com/browserslist/browserslist#queries)
 
 ### Replace a default config
 
-Each config in your app folder replaces the default of the same name:
+A config in your app folder replaces the VBlocks default of the same name:
 
 - `webpack.config.js`
 - `postcss.config.js`, the default runs:
   - `postcss-preset-env`, which compiles nesting, `oklch()` and `color-mix()`
     for older browsers and adds vendor prefixes
   - `cssnano` in `production`
-- `.swcrc`, the default targets `> 0.25%, not dead`
+- `.swcrc`
+- `.browserslistrc`, the default `> 0.25%, not dead`
 
-1. **[Eject](#vblocks-eject) the default into your app folder**
+1. **[Eject](docs/REFERENCE.md#vblocks-eject) the default into your app folder**
 
    ```sh
    cd my-vblocks-app
    npx vblocks eject swc > .swcrc
    ```
 
+   An ejected config loads its plugins and loaders from the project folder, not
+   from VBlocks. Install them there.
+
 2. **Update the ejected file**
 
 > [!NOTE]\
 > VBlocks does not merge your config with the default, with two exceptions:
 >
-> - `.swcrc -> env.targets`: VBlocks adds the default when yours is missing
+> - `.swcrc -> env.path`: VBlocks adds the app folder when yours is missing, so
+>   SWC reads the browserslist config
 > - `.swcrc -> jsc.transform.react.refresh`: VBlocks adds the React Refresh
 >   transform when `serve` runs in `development` mode
 
@@ -316,8 +297,8 @@ VBlocks does not include Tailwind. Add it through a `postcss.config.js` in your
 app folder:
 
 > [!NOTE]\
-> The `xyflow` and `xyflow-tabs` templates of [`vblocks init`](#vblocks-init)
-> have this setup.
+> The `xyflow` and `xyflow-tabs` templates of
+> [`vblocks init`](docs/REFERENCE.md#vblocks-init) have this setup.
 
 1. **Install Tailwind, its PostCSS plugin and cssnano, which the ejected config
    imports**
@@ -364,8 +345,51 @@ app folder:
    `src/`.
 
    - Without it, Tailwind scans the folder you run VBlocks from. With
-     [`--prefix`](#vblocks-build), that is the project folder, which contains
-     every app. Each app's CSS then also gets the classes of the other apps
+     [`--prefix`](docs/REFERENCE.md#vblocks-build), that is the project folder,
+     which contains every app. Each app's CSS then also gets the classes of the
+     other apps
+
+### Send UI annotations to an AI agent
+
+[Agentation](https://www.agentation.com) is a toolbar to send annotations on the
+UI to a coding agent. `vblocks init` writes it into `src/index.tsx`. The toolbar
+shows in `development` mode, the default of `serve`.
+
+1. **Configure the agentation-mcp server**, see
+   [Agentation's docs](https://www.agentation.com/mcp)
+
+2. **Set `AGENTATION_ENDPOINT` in the `.env` of the app folder**, as in
+   `.env.example`
+
+   ```env
+   AGENTATION_ENDPOINT=http://localhost:4747
+   ```
+
+> [!NOTE]\
+> Agentation's license is PolyForm Shield 1.0.0, not MIT. To remove Agentation,
+> remove its lines from `src/index.tsx` and run `npm uninstall agentation`.
+
+### Open the page from another device
+
+The server listens on `localhost`, so another device cannot open the page. Pass
+`-- --host 0.0.0.0` to expose it to the network:
+
+```sh
+npx vblocks serve -- --host 0.0.0.0
+```
+
+### Build a single HTML file
+
+`--single-file` builds one standalone `dist/index.html`, every asset inlined,
+with no `robots.txt`:
+
+```sh
+npx vblocks build --single-file
+```
+
+> [!IMPORTANT]\
+> A browser opens it from disk. There, `history.pushState` to another path
+> throws, so keep the route in the URL hash.
 
 ### Add VBlocks to an existing project
 
@@ -376,7 +400,7 @@ app folder:
    ```
 
 2. **Add the [client types](types/client.d.ts) and the
-   [`@self`](#stop-using--everywhere) alias to your `tsconfig.json`**
+   [`@self`](#import-from-src-with-self) alias to your `tsconfig.json`**
 
    ```diff
     {
@@ -392,223 +416,44 @@ app folder:
 > TypeScript's `nodenext` resolution requires. VBlocks resolves it to
 > `button.tsx`.
 
-3. **Move `index.tsx` and `index.html` into `src/`**
+3. **Put your entry at `src/index.tsx` and your page at `src/index.html`**
 
-> [!NOTE]\
-> VBlocks builds `dist/index.html` from `src/index.html` and adds the script and
-> stylesheet tags to it. Remove the tag that loads your entry, eg. Vite's
-> `<script type="module" src="/src/main.tsx"></script>`.
+4. **Remove the tag that loads your entry from `src/index.html`**, eg. Vite's
+   `<script type="module" src="/src/main.tsx"></script>`
 
-4. **Start a development server**
+   VBlocks builds `dist/index.html` from `src/index.html` and adds the script
+   and stylesheet tags to it.
+
+5. **Start a development server**
 
    ```sh
    npx vblocks serve
    ```
 
-## References
+## More docs
 
-### Commands
+- **Reference**: every command, template and environment variable, in
+  [docs/REFERENCE.md](docs/REFERENCE.md)
+- **Decisions**: why the code is this way, in
+  [docs/DECISIONS.md](docs/DECISIONS.md)
+- **Release history**: what each version added, fixed and removed, in
+  [GitHub releases](https://github.com/asd-xiv/vblocks/releases)
 
-Each command prints its own help with `--help`, eg. `npx vblocks serve --help`.
-
-#### `vblocks init`
-
-Write a template's plumbing, app, or both into `<directory>`.
-
-```text
-vblocks init <directory>
-  [--template <name>]
-  [--only <app|plumbing>]
-vblocks init --list
-```
-
-- `<directory>`
-  - The folder to write into. It must be missing or empty
-- `--template` (default: `plain`)
-  - The template to write, see [Templates](#templates)
-- `--list`
-  - Print the templates, one per line
-- `--only` (default: both)
-  - Write one part of the template
-  - `plumbing`: `package.json`, `.gitignore`
-  - `app`: `src/`, `.env.example`, `tsconfig.json` and the template's configs.
-    `init` adds the template's dependencies to the `package.json` of the
-    [project folder](#vocabulary), the parent of `<directory>`. Without a
-    `package.json` there, `init` fails
-
-#### `vblocks serve`
-
-Start the development server.
-
-- Runs at `http://localhost:8080`, or the next free port
-- Shows the [Agentation](#agentation) toolbar (`vblocks init` writes it into
-  `src/index.tsx`)
-- Listens on `localhost`, so another device on your network, eg. a phone, cannot
-  open the page
-- Opens the page in the browser
+## Develop
 
 ```text
-vblocks serve
-  [--mode <development|production>]
-  [--prefix <directory>]
-  [--analyze]
-  [--log-level <error|warn|info|verbose>]
-  [-- <webpack option>...]
+vblocks/
+├── bin/         # vblocks, and one file per command in vblocks.d/
+├── defaults/    # the configs that eject prints
+├── template/    # the templates of init
+└── types/       # client.d.ts
 ```
 
-- `--mode` (default: `development`)
-  - The Webpack mode
-  - React Refresh and the Agentation toolbar run only in `development`
-- `--prefix` (default: the current folder)
-  - The [app folder](#vocabulary), which must exist
-- `--analyze`
-  - Run the bundle analyzer, on a free port
-- `--log-level` (default: `warn`)
-  - How much Webpack and its development server print
-- `-- <webpack option>...`
-  - Any [`webpack serve`](https://webpack.js.org/api/cli/) option
-  - `serve` passes each one to Webpack unchanged
-  - eg. `-- --host 0.0.0.0`, to listen on the network
-
-##### Agentation
-
-[Agentation](https://www.agentation.com) is a toolbar for UI feedback to a
-coding agent.
-
-- Configure the agentation-mcp server, see
-  [Agentation's docs](https://www.agentation.com/mcp)
-- Set `AGENTATION_ENDPOINT` in the `.env` of the app folder, as in
-  `.env.example`
-
-> [!NOTE]\
-> Agentation's license is PolyForm Shield 1.0.0, not MIT. To remove Agentation,
-> remove its lines from `src/index.tsx` and run `npm uninstall agentation`.
-
-#### `vblocks build`
-
-Build the app into a bundle in the `dist/` of the app folder.
-
-By default, `build`:
-
-- Writes JS and CSS files with content-hashed names
-- Writes a `react` chunk, and a `vendors` chunk when your other dependencies
-  total over 20 KB (10 KB in `development`)
-- Inlines `jpg`, `gif`, `png` and `svg` files up to 10 KB
-- Writes larger images to `dist/` with content-hashed names
-- Writes `woff`, `woff2`, `ttf` and `eot` files to `dist/fonts/`
-- Copies `src/public/favicon.svg` and `src/public/robots.txt` of your app, or
-  the defaults of VBlocks
-
-```text
-vblocks build
-  [--mode <development|production>]
-  [--prefix <directory>]
-  [--single-file|--single]
-  [--log-level <error|warn|info|verbose>]
-  [-- <webpack option>...]
-```
-
-- `--mode` (default: `production`)
-  - The Webpack mode
-  - In `production`, `build` minifies JS, HTML and, with the default PostCSS
-    config, CSS
-- `--prefix` (default: the current folder)
-  - The [app folder](#vocabulary), which must exist
-- `--single-file|--single`
-  - Write one standalone `dist/index.html`, every asset inlined
-  - A browser opens the file from disk, with no server and no network
-  - The bundle has no `robots.txt`
-  - Keep the route in the URL hash
-    - On `file://`, `history.pushState` to another path throws
-- `--log-level` (default: `warn`)
-  - How much Webpack prints
-- `-- <webpack option>...`
-  - Any [`webpack build`](https://webpack.js.org/api/cli/) option
-  - `build` passes each one to Webpack unchanged
-  - eg. `-- --devtool source-map`, to write source maps
-
-#### `vblocks eject`
-
-Print a default config to stdout.
-
-```text
-vblocks eject <webpack|postcss|swc>
-```
-
-- `<webpack|postcss|swc>`
-  - The config to print
-
-Run it in your app folder and save the output there, to
-[replace the default](#replace-a-default-config):
-
-```sh
-npx vblocks eject webpack > webpack.config.js
-npx vblocks eject postcss > postcss.config.js
-npx vblocks eject swc > .swcrc
-```
-
-An ejected config loads its plugins and loaders from your project. Install them
-in the project folder, eg. `postcss-preset-env` and `cssnano` for the PostCSS
-config.
-
-### Templates
-
-Every template scaffolds:
-
-```text
-src/
-├── index.tsx        # mounts App, and the Agentation toolbar in development
-├── index.app.tsx    # App, one per template
-├── index.html
-└── index.css        # the global CSS and its @imports, a Webpack entry of its
-                     # own, so no .tsx needs to import it
-.env.example         # AGENTATION_ENDPOINT
-tsconfig.json
-```
-
-- Adds `agentation` to the `devDependencies` of the project folder
-- Each `src/index.<concern>.tsx` defines one concern of `src/index.tsx`, eg.
-  `index.app.tsx` defines App
-
-#### `plain`
-
-"Hello World!" in `src/index.app.tsx`.
-
-- Adds no other packages
-
-#### `xyflow`
-
-One diagram, and a details panel for the selected node or edge.
-
-- Adds `@xyflow/react`, `tailwindcss`, `@tailwindcss/postcss` and `cssnano` to
-  the `package.json` of the project folder
-- Writes a `postcss.config.js` that configures Tailwind
-
-```text
-src/
-├── index.app.tsx       # the layout: header, diagram, details panel, the selected id
-├── diagram.tsx         # the nodes and edges, placed and sized in grid cells
-├── details.tsx         # the panel for the selected node or edge
-└── utils/grid.ts       # CELL_SIZE and toPixels
-```
-
-#### `xyflow-tabs`
-
-One tab per diagram, each with its own details panel.
-
-- Adds the same packages and `postcss.config.js` as `xyflow`
-
-```text
-src/
-├── index.app.tsx          # the layout: header, tab bar, details panel, the selected id
-├── pages/
-│   ├── build/
-│   │   ├── diagram.tsx    # the nodes and edges of one tab, in grid cells
-│   │   └── details.tsx    # the panel for its selected node or edge
-│   └── serve/             # the same two files
-├── ui/zoom-level.tsx      # the zoom level, and a Reset to 100%
-└── utils/grid.ts          # CELL_SIZE and toPixels
-```
+| Script              | Does                                                               |
+| :------------------ | :----------------------------------------------------------------- |
+| `npm run lint`      | Runs ESLint                                                        |
+| `npm run typecheck` | Typechecks the code and the client types                           |
+| `npm run unit-test` | Typechecks, builds and serves every template `vblocks init` writes |
 
 ## License
 
