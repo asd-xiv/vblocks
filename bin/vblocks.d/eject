@@ -7,16 +7,18 @@
 #   vblocks eject <config>
 #
 # DESCRIPTION
-#   Print the config to stdout. Save it in the app folder, and serve and
-#   build run with it in place of the VBlocks default.
+#   eject prints the config to stdout. Save it in the app folder. serve and
+#   build then run with it in place of the VBlocks default.
 #
 #   An ejected config loads its plugins and loaders from the project folder,
-#   not from VBlocks. Install them there. webpack-cli, webpack and
-#   webpack-dev-server stay those of VBlocks.
+#   not from VBlocks. Install them there. serve and build still run the
+#   webpack-cli, webpack and webpack-dev-server of VBlocks.
 #
 # ARGUMENTS
-#   config   webpack, postcss, swc or browserslist. Save each as
-#            webpack.config.js, postcss.config.js, .swcrc or .browserslistrc
+#   config   webpack        Save it as webpack.config.js
+#            postcss        Save it as postcss.config.js
+#            swc            Save it as .swcrc
+#            browserslist   Save it as .browserslistrc
 #
 # OPTIONS
 #   -h, --help   Print this help

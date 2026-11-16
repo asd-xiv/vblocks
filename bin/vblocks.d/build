@@ -6,13 +6,13 @@
 # SYNOPSIS
 #   vblocks build
 #     [--mode <development|production>]
-#     [--prefix <directory>]
+#     [--prefix <folder>]
 #     [--single-file|--single]
 #     [--log-level <error|warn|info|verbose>]
 #     [-- <webpack option>...]
 #
 # DESCRIPTION
-#   The app folder holds src/index.tsx and src/index.html. A config in it,
+#   The app folder contains src/index.tsx and src/index.html. A config in it,
 #   webpack.config.js, postcss.config.js, .swcrc or .browserslistrc, replaces
 #   the VBlocks default of the same name. So do src/public/robots.txt and
 #   src/public/favicon.svg.
@@ -27,14 +27,33 @@
 #   app folder up. Without any of them, browserslist reads the VBlocks default,
 #   defaults/.browserslistrc.
 #
+#   Without --single-file, dist/ contains:
+#
+#     index.html
+#     favicon.svg
+#     robots.txt
+#     js/main.<hash>.js
+#     js/react.<hash>.js      react and react-dom
+#     js/vendors.<hash>.js    the rest of node_modules
+#     js/*.LICENSE.txt        the license comments of each chunk
+#     css/main.<hash>.css
+#     fonts/<name>.<ext>      each font
+#     <hash>.<ext>            each image over 10 KiB
+#
+#   Webpack inlines an image up to 10 KiB. It splits react and vendors out of
+#   main, so the browser keeps them cached across builds.
+#
 # OPTIONS
 #   --mode <mode>              The Webpack mode, development or production
 #                              (default: production)
-#   --prefix <directory>       The app folder, which must exist (default: the
+#   --prefix <folder>          The app folder, which must exist (default: the
 #                              current folder)
 #   --single-file, --single    Build one standalone dist/index.html, every
-#                              asset inlined, with no robots.txt. An ejected
-#                              webpack.config.js must read env.single
+#                              asset inlined, with no robots.txt. A browser
+#                              opens it from disk. There, history.pushState
+#                              to another path throws, so keep the route in
+#                              the URL hash. An ejected webpack.config.js
+#                              builds one file only if it reads env.single
 #   --log-level <level>        How much Webpack prints: error, warn, info or
 #                              verbose (default: warn)
 #   -- <webpack option>...     Pass each option to Webpack, unchanged
