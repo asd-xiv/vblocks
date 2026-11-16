@@ -20,13 +20,13 @@ const logger = buildLogger({ namespace: "vblocks", level: "info" })
 const require = createRequire(import.meta.url)
 
 /**
- * Read the SWC config, set the browser targets it lacks, and turn on React
- * Refresh when `hasReactRefresh` is true
+ * Read the SWC config, point SWC at the browserslist config from `entryDir` up,
+ * and turn on React Refresh when `hasReactRefresh` is true
  *
  * @param {string} path
- * @param {{ hasReactRefresh: boolean }} options
+ * @param {{ hasReactRefresh: boolean, entryDir: string }} options
  */
-const loadSwcConfig = (path, { hasReactRefresh }) => {
+const loadSwcConfig = (path, { hasReactRefresh, entryDir }) => {
   const content = fs.readFileSync(path, "utf8")
   const config = /** @type {unknown} */ (JSON.parse(content))
   const typedConfig = /** @type {import("@swc/core").Config} */ (config)
@@ -37,8 +37,11 @@ const loadSwcConfig = (path, { hasReactRefresh }) => {
     // this, SWC also reads the .swcrc of the folder VBlocks runs in, eg. the
     // package around the app
     swcrc: false,
+    // SWC reads the browserslist config from this folder up, as Webpack and
+    // postcss-preset-env do. Without one, `serve` and `build` give it the
+    // VBlocks default
     env: {
-      targets: "> 0.25%, not dead",
+      path: entryDir,
       ...typedConfig.env,
     },
     jsc: {
@@ -313,7 +316,7 @@ export default (
   const isSingle = Boolean(single) && !isServe
   const isAnalyze = Boolean(analyze) && isServe
   const hasReactRefresh = isServe && mode === "development"
-  const swcConfig = loadSwcConfig(swcConfigPath, { hasReactRefresh })
+  const swcConfig = loadSwcConfig(swcConfigPath, { hasReactRefresh, entryDir })
   const swcLoader = {
     loader: require.resolve("swc-loader"),
     options: swcConfig,
@@ -372,9 +375,11 @@ export default (
 
     devtool: isServe ? "eval-source-map" : false,
 
-    // Webpack builds for the browser targets of the SWC config, so both tools
-    // agree
-    target: `browserslist:${swcConfig.env.targets}`,
+    // Webpack reads the browserslist config from `context` up, as SWC and
+    // postcss-preset-env do. Without one, `serve` and `build` give Webpack the
+    // VBlocks default
+    context: entryDir,
+    target: "browserslist",
 
     module: {
       rules: [

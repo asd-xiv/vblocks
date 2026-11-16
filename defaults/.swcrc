@@ -4,8 +4,7 @@
   "sourceMaps": true,
   "env": {
     "mode": "entry",
-    "coreJs": "3.22",
-    "targets": "> 0.25%, not dead"
+    "coreJs": "3.22"
   },
   "jsc": {
     "externalHelpers": true,

@@ -58,6 +58,77 @@ _resolve_vblocks_file() {
     "$1" "$_VB_DIR"
 }
 
+# _find_browserslist <app-dir>
+#
+# Print the first source browserslist finds for the browsers of <app-dir>:
+# BROWSERSLIST=<query>, BROWSERSLIST_CONFIG=<file>, or the config file from
+# <app-dir> up. Print nothing when browserslist finds none.
+#
+# EXIT
+#   2   browserslist could not read a config, eg. one folder has both a
+#       .browserslistrc and the browserslist field of package.json
+#   3   Could not find the browserslist of VBlocks
+_find_browserslist() {
+  fb_lib_file=$(_resolve_vblocks_file browserslist) ||
+    _fail 3 "Could not find the browserslist of VBlocks"
+
+  # loadConfig follows the order of browserslist, so VBlocks does not repeat
+  # it. VBlocks reads the two variables only to label the source. loadConfig
+  # reads them before any file, so the first one set is the source
+  # shellcheck disable=SC2016 # JavaScript, not shell
+  fb_source=$(node -e '
+    const browserslist = require(process.argv[1])
+    const appDir = process.argv[2]
+    try {
+      if (browserslist.loadConfig({ path: appDir }) === undefined) {
+        console.log("none")
+      } else if (process.env.BROWSERSLIST) {
+        console.log(`BROWSERSLIST=${process.env.BROWSERSLIST}`)
+      } else if (process.env.BROWSERSLIST_CONFIG) {
+        console.log(`BROWSERSLIST_CONFIG=${process.env.BROWSERSLIST_CONFIG}`)
+      } else {
+        console.log(browserslist.findConfigFile(appDir))
+      }
+    } catch (error) {
+      console.log(`error ${error.message}`)
+    }
+  ' "$fb_lib_file" "$1")
+
+  case "$fb_source" in
+    none) ;;
+    "error "*) _fail 2 -v reason "${fb_source#error }" "browserslist could not read the browsers of the app" ;;
+    *) printf '%s\n' "$fb_source" ;;
+  esac
+}
+
+# _pick_browserslist <app-dir>
+#
+# Export BROWSERSLIST_CONFIG with the VBlocks default, when browserslist finds
+# no config for <app-dir>. SWC, Webpack and postcss-preset-env then read it.
+#
+# EXIT
+#   2   browserslist could not read a config, see _find_browserslist
+#   3   Could not find the browserslist of VBlocks
+_pick_browserslist() {
+  pb_source=$(_find_browserslist "$1")
+  if [ -z "$pb_source" ]; then
+    BROWSERSLIST_CONFIG="$_VB_DIR/defaults/.browserslistrc"
+    export BROWSERSLIST_CONFIG
+  fi
+}
+
+# _print_browserslist_source <source> <app-dir>
+#
+# Print <source>, what _find_browserslist prints: a file as _print_file_path
+# does, the VBlocks default in gray, and a variable the User set as it is.
+_print_browserslist_source() {
+  case "$1" in
+    BROWSERSLIST_CONFIG="$_VB_DIR/defaults/.browserslistrc") _print_file_path "${1#BROWSERSLIST_CONFIG=}" "$2" ;;
+    BROWSERSLIST=* | BROWSERSLIST_CONFIG=*) printf '%s\n' "$1" ;;
+    *) _print_file_path "$1" "$2" ;;
+  esac
+}
+
 # _print_file_path <file> <app-dir>
 #
 # Print the path of <file>, its folder as $APP_DIR, or as $VBLOCKS_DIR in gray
@@ -70,20 +141,22 @@ _print_file_path() {
   esac
 }
 
-# _print_summary <app-dir> <webpack-config> <postcss-config> <swc-config> <robots-file> <favicon-file>
+# _print_summary <app-dir> <webpack-config> <postcss-config> <swc-config> <robots-file> <favicon-file> <browserslist-source>
 #
-# Print the app folder, the VBlocks folder and the files Webpack runs with. An
-# empty <robots-file> prints no Robots line.
+# Print the app folder, the VBlocks folder, the files Webpack runs with and the
+# source of the browsers. An empty <robots-file> prints no Robots line.
+# <browserslist-source> is what _find_browserslist prints.
 _print_summary() {
   # The icons of the tools and the files, only on a terminal
   ps_webpack_icon="" ps_postcss_icon="" ps_swc_icon=""
-  ps_robots_icon="" ps_favicon_icon=""
+  ps_robots_icon="" ps_favicon_icon="" ps_browsers_icon=""
   if [ -n "$_IS_TERMINAL" ]; then
     ps_webpack_icon=" "
     ps_postcss_icon=" "
     ps_swc_icon="󱡮 "
     ps_robots_icon="󰚩 "
     ps_favicon_icon=" "
+    ps_browsers_icon="󰖟 "
   fi
 
   printf '%s\t%s\n' "${_BOLD}\$APP_DIR${_RESET}" "$(_shorten_home "$1")"
@@ -92,6 +165,7 @@ _print_summary() {
   printf '%s\t%s\n' "${ps_webpack_icon}${_BOLD}Webpack${_RESET}" "$(_print_file_path "$2" "$1")"
   printf '%s\t%s\n' "${ps_postcss_icon}${_BOLD}PostCSS${_RESET}" "$(_print_file_path "$3" "$1")"
   printf '%s\t%s\n' "${ps_swc_icon}${_BOLD}SWC${_RESET}" "$(_print_file_path "$4" "$1")"
+  printf '%s\t%s\n' "${ps_browsers_icon}${_BOLD}Browsers${_RESET}" "$(_print_browserslist_source "$7" "$1")"
   if [ -n "$5" ]; then
     printf '%s\t%s\n' "${ps_robots_icon}${_BOLD}Robots${_RESET}" "$(_print_file_path "$5" "$1")"
   fi

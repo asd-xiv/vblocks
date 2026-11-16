@@ -15,8 +15,8 @@
 #   webpack-dev-server stay those of VBlocks.
 #
 # ARGUMENTS
-#   config   webpack, postcss or swc. Save each as webpack.config.js,
-#            postcss.config.js or .swcrc
+#   config   webpack, postcss, swc or browserslist. Save each as
+#            webpack.config.js, postcss.config.js, .swcrc or .browserslistrc
 #
 # OPTIONS
 #   -h, --help   Print this help
@@ -54,7 +54,7 @@ _EJECT_CONFIG="" # eject <config>
 # │ Flags and positionals
 # ╰───
 
-[ "$#" -ne 1 ] && _fail 2 -v available_configs "webpack,postcss,swc" "eject needs one config"
+[ "$#" -ne 1 ] && _fail 2 -v available_configs "webpack,postcss,swc,browserslist" "eject needs one config"
 
 case "$1" in
   -h | --help)
@@ -64,7 +64,8 @@ case "$1" in
   webpack) _EJECT_CONFIG="webpack.config.js" ;;
   postcss) _EJECT_CONFIG="postcss.config.js" ;;
   swc) _EJECT_CONFIG=".swcrc" ;;
-  *) _fail 2 -v config "$1" -v available_configs "webpack,postcss,swc" "Unknown config" ;;
+  browserslist) _EJECT_CONFIG=".browserslistrc" ;;
+  *) _fail 2 -v config "$1" -v available_configs "webpack,postcss,swc,browserslist" "Unknown config" ;;
 esac
 
 # ╭───

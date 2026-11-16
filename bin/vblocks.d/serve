@@ -13,12 +13,18 @@
 #
 # DESCRIPTION
 #   The app folder holds src/index.tsx and src/index.html. A config in it,
-#   webpack.config.js, postcss.config.js or .swcrc, replaces the VBlocks
-#   default of the same name. So do src/public/robots.txt and
+#   webpack.config.js, postcss.config.js, .swcrc or .browserslistrc, replaces
+#   the VBlocks default of the same name. So do src/public/robots.txt and
 #   src/public/favicon.svg.
 #
-#   Print the app folder, the VBlocks folder and the files Webpack runs with,
-#   then start the server.
+#   Print the app folder, the VBlocks folder, the files Webpack runs with and
+#   the source of the browsers, then start the server.
+#
+#   SWC, Webpack and postcss-preset-env compile for the browsers of the app's
+#   browserslist config. browserslist reads BROWSERSLIST, BROWSERSLIST_CONFIG,
+#   then a .browserslistrc or the browserslist field of package.json, from the
+#   app folder up. Without any of them, browserslist reads the VBlocks default,
+#   defaults/.browserslistrc.
 #
 # OPTIONS
 #   --mode <mode>              The Webpack mode, development or production
@@ -35,7 +41,12 @@
 #   -h, --help                 Print this help
 #
 # ENVIRONMENT
-#   NO_COLOR   When non-empty, print without color, the icons or the header
+#   NO_COLOR              When non-empty, print without color, the icons or
+#                         the header
+#   BROWSERSLIST          The browsers, as a browserslist query. It overrides
+#                         every config file
+#   BROWSERSLIST_CONFIG   The path of a browserslist config, in place of the
+#                         one browserslist finds from the app folder up
 #
 # EXAMPLE
 #   npx vblocks serve
@@ -43,7 +54,8 @@
 #
 # EXIT CODES
 #   0   Done
-#   2   Invalid usage, or Webpack rejected an option or the config
+#   2   Invalid usage, Webpack rejected an option or the config, or
+#       browserslist could not read a config
 #   3   Could not run: a missing tool, or a failed Webpack run
 #
 # SEE ALSO
@@ -140,10 +152,12 @@ _POSTCSS_CONFIG=$(_pick_file "$_APP_DIR" postcss.config.js)
 _SWC_CONFIG=$(_pick_file "$_APP_DIR" .swcrc)
 _ROBOTS_FILE=$(_pick_file "$_APP_DIR" src/public/robots.txt)
 _FAVICON_FILE=$(_pick_file "$_APP_DIR" src/public/favicon.svg)
+_pick_browserslist "$_APP_DIR"
+_BROWSERSLIST_SOURCE=$(_find_browserslist "$_APP_DIR")
 
 _print_header "$VB_VERSION" "${_BOLD}serve${_RESET}: $_MODE${_SHOULD_ANALYZE:+, analyze}" >&2
 _print_summary "$_APP_DIR" "$_WEBPACK_CONFIG" "$_POSTCSS_CONFIG" "$_SWC_CONFIG" \
-  "$_ROBOTS_FILE" "$_FAVICON_FILE"
+  "$_ROBOTS_FILE" "$_FAVICON_FILE" "$_BROWSERSLIST_SOURCE"
 
 # The default Webpack config reads env.analyze. An ejected config supports
 # --analyze only if it reads env.analyze too
