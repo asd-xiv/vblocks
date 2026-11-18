@@ -5,30 +5,34 @@
 
 > Zero-config React builds, as a static site or a single HTML file
 
-**✂️ Zero config**\
-Needs only `src/index.tsx` and `src/index.html`
+**✂️ Zero config**
+
+- Needs only `src/index.tsx` and `src/index.html`
 
 <!--
 Using "Maximal support" to pair with "Zero config" above: nothing to set up, and
 everything set up.
 -->
 
-**🔋 Maximal support**\
-SWC, PostCSS, CSS Modules, MDX, React Refresh, `.env` files
+**🔋 Maximal support**
 
-**📦 Several apps, one install**\
-Apps share one `package.json` and `node_modules/`. A new app reuses the
-installed packages
+- SWC, PostCSS, CSS Modules, MDX, React Refresh, `.env` files
 
-**🤖 Optimized for AI agents**\
-The agent's context contains only the app. The agent does not write, read or fix
-a Webpack, PostCSS or SWC config
+**📦 Several apps, one install**
 
-- [Agentation](https://www.agentation.com) in development: click an element and
-  write what to change. The agent gets the annotation with the element's
+- Apps share one `package.json` and `node_modules/`. A new app reuses the
+  installed packages
+
+**🤖 Built for AI agents**
+
+- **[`write-vblocks-app`](.sh41/skills/write-vblocks-app/SKILL.md) skill**:
+  teaches an agent to write, serve and build a VBlocks app
+- **[Agentation](https://www.agentation.com) in development**: click an element
+  and write what to change. The agent gets the annotation with the element's
   selector, text and React components
-- A terminal gets color and a header. An agent reads through a pipe, and gets
-  only the facts
+- **Small context**: the agent does not write, read or fix a Webpack, PostCSS or
+  SWC config. Through a pipe, VBlocks prints only the facts, without the color,
+  icons and header a terminal gets
 
 ## Table of contents
 

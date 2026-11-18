@@ -38,6 +38,10 @@ src/
 tsconfig.json      # extends @asd14/ts-config, maps @self/* to src/*
 ```
 
+- `src/index.tsx` mounts the app
+- Each `src/index.<concern>.tsx` defines one concern of it, eg. `index.app.tsx`
+  defines App
+
 **Hooks**:
 
 1. [`post-init-app.sh`](post-init-app.sh) runs in the app folder, after the

@@ -58,9 +58,7 @@ npx vblocks serve --help
 | `0`       | Done                              |
 | `2`       | No command, or an unknown command |
 
-Each command prints its own help with `--help`.
-
-A command exits with the codes its help lists.
+- Each command prints its own help with `--help`.
 
 See also: [`vblocks init`](#vblocks-init), [`vblocks serve`](#vblocks-serve),
 [`vblocks build`](#vblocks-build), [`vblocks eject`](#vblocks-eject)
