@@ -30,8 +30,8 @@ set -eu
 #   curl, https://github.com/asd-xiv/posix-utils
 
 ROOT_DIR=$(dirname "$(dirname "$(realpath "$0")")")
-LIB_VERSION="v5.0.0" # a tag of posix-utils
-LIB_FILES="log validation guard help"
+LIB_VERSION="v6.0.0" # a tag of posix-utils
+LIB_FILES="log validation guard help os terminal"
 LIB_URL="https://raw.githubusercontent.com/asd-xiv/posix-utils/$LIB_VERSION/bin/lib"
 LIB_DIR="$ROOT_DIR/bin/vblocks.d/lib"
 

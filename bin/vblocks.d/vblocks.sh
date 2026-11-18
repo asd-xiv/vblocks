@@ -1,9 +1,10 @@
 #!/bin/sh
 
 # vblocks.sh - What every command of vblocks shares:
-# - the folders, the styles of the output and the header
+# - the folders, the styles of the output, the header and the window title
 #
-# Needs lib/log.sh. The command needs to source it before this file.
+# Needs lib/log.sh. _set_command_title also needs lib/os.sh and
+# lib/terminal.sh. The command sources them before this file.
 
 # The caller sets _SCRIPT_DIR to the folder of vblocks.sh, then sources it
 : "${_SCRIPT_DIR:?the caller sets _SCRIPT_DIR before it sources vblocks.sh}"
@@ -72,6 +73,16 @@ _print_header() {
   printf '╭───────────┤ %s\n' "${_GREEN} VBlocks v$1${_RESET}"
   printf '│ %s\n' "$2"
   printf '╰──┤\n'
+}
+
+# _set_command_title <command> <subject>
+#
+# Set the title of the terminal window to "<command> <subject> :: vblocks", eg.
+# "serve flow :: vblocks", until the command exits. <subject> is what the
+# command works on, eg. the app folder. It comes first, because a tab bar cuts
+# a long title at its end.
+_set_command_title() {
+  _set_title_until_exit "$1 $2 :: vblocks"
 }
 
 # ╭───

@@ -79,6 +79,10 @@ _SCRIPT_DIR=$(dirname "$0")
 . "$_SCRIPT_DIR/lib/guard.sh"
 # shellcheck source=lib/help.sh
 . "$_SCRIPT_DIR/lib/help.sh"
+# shellcheck source=lib/os.sh
+. "$_SCRIPT_DIR/lib/os.sh"
+# shellcheck source=lib/terminal.sh
+. "$_SCRIPT_DIR/lib/terminal.sh"
 # shellcheck source=vblocks.sh
 . "$_SCRIPT_DIR/vblocks.sh"
 # shellcheck source=webpack.sh
@@ -158,6 +162,7 @@ _ROBOTS_FILE=$(_pick_file "$_APP_DIR" src/public/robots.txt)
 _FAVICON_FILE=$(_pick_file "$_APP_DIR" src/public/favicon.svg)
 _pick_browserslist "$_APP_DIR"
 _BROWSERSLIST_SOURCE=$(_find_browserslist "$_APP_DIR")
+_set_command_title serve "$(basename -- "$_APP_DIR")"
 
 _print_header "$VB_VERSION" "${_BOLD}serve${_RESET}: $_MODE${_SHOULD_ANALYZE:+, analyze}" >&2
 _print_summary "$_APP_DIR" "$_WEBPACK_CONFIG" "$_POSTCSS_CONFIG" "$_SWC_CONFIG" \
