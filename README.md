@@ -45,6 +45,7 @@ everything set up.
   - [Import from `src/` with `@self`](#import-from-src-with-self)
   - [Use CSS Modules](#use-css-modules)
   - [Import a file as text](#import-a-file-as-text)
+  - [Write a page in Markdown or MDX](#write-a-page-in-markdown-or-mdx)
   - [Pick the browsers](#pick-the-browsers)
   - [Replace a default config](#replace-a-default-config)
   - [Style with Tailwind](#style-with-tailwind)
@@ -243,6 +244,27 @@ import greeting from "./greeting.txt?raw"
 > [!NOTE]\
 > The [client types](types/client.d.ts) declare each `?raw` import as a
 > `string`.
+
+### Write a page in Markdown or MDX
+
+Import an `.md` or `.mdx` file as a React component:
+
+```tsx
+import Intro from "./intro.mdx"
+
+const App = () => <Intro />
+```
+
+Pass `components` to replace the element MDX renders for a tag, eg. each `#`
+heading:
+
+```tsx
+<Intro components={{ h1: Title }} />
+```
+
+> [!NOTE]\
+> The [client types](types/client.d.ts) declare each `.md` and `.mdx` import as
+> a React component.
 
 ### Pick the browsers
 

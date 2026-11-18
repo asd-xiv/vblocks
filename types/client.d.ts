@@ -72,6 +72,25 @@ declare module "*.eot" {
 }
 
 /**
+ * The Markdown document as a React component. VBlocks compiles `.md` with MDX,
+ * so it takes the same `components` as an `.mdx` import.
+ *
+ * @example
+ * import Notes from "./notes.md"
+ *
+ * <Notes components={{ h1: Title }} />
+ */
+declare module "*.md" {
+  import type { ComponentType } from "react"
+
+  const MDXContent: ComponentType<{
+    components?: Record<string, ComponentType<Record<string, unknown>>>
+  }>
+
+  export default MDXContent
+}
+
+/**
  * The MDX document as a React component. `components` replaces the element
  * MDX renders for a tag, eg. `{ h1: Title }`.
  *
