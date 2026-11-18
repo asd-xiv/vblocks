@@ -30,7 +30,8 @@
 
 ### `vblocks`
 
-Zero-config React builds, as a static site or a single HTML file
+Zero-config React builds of an SPA (single-page application), as a folder or a
+single HTML file
 
 ```text
 vblocks <command> [OPTIONS]

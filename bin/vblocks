@@ -3,7 +3,8 @@
 set -eu
 
 # NAME
-#   vblocks - Zero-config React builds, as a static site or a single HTML file
+#   vblocks - Zero-config React builds of an SPA (single-page application), as
+#   a folder or a single HTML file
 #
 # SYNOPSIS
 #   vblocks <command> [OPTIONS]

@@ -3,7 +3,11 @@
 
 # @asd14/vblocks
 
-> Zero-config React builds, as a static site or a single HTML file
+> Zero-config React builds of an SPA (single-page application), as a folder or a
+> single HTML file
+
+VBlocks is a zero-config React bundler, like Create React App or Parcel. It has
+no SSR (server-side rendering) or SSG (static site generation), as Next.js does.
 
 **✂️ Zero config**
 
