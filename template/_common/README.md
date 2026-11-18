@@ -11,7 +11,7 @@ The template's hook does not replace the common one.
 The files of the [project folder](../../docs/REFERENCE.md#domain-vocabulary):
 
 ```text
-package.json    # the scripts, React, TypeScript and the browserslist field
+package.json    # the scripts, React and TypeScript
 _gitignore      # node_modules, dist and .env
 ```
 
@@ -38,9 +38,8 @@ src/
 tsconfig.json      # extends @asd14/ts-config, maps @self/* to src/*
 ```
 
-- `src/index.tsx` mounts the app
-- Each `src/index.<concern>.tsx` defines one concern of it, eg. `index.app.tsx`
-  defines App
+- Put each concern that `src/index.tsx` imports in its own
+  `src/index.<concern>.tsx`, eg. `index.app.tsx` defines `App`
 
 **Hooks**:
 

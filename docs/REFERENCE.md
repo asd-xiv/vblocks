@@ -139,6 +139,7 @@ vblocks serve
 ```sh
 npx vblocks serve
 npx vblocks serve --prefix flow -- --host 0.0.0.0
+npx vblocks serve -- --port 8099 --no-open
 ```
 
 | Name                     | Default            | Description                                                                                                              |

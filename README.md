@@ -34,9 +34,11 @@ everything set up.
 - **[Agentation](https://www.agentation.com) in development**: click an element
   and write what to change. The agent gets the annotation with the element's
   selector, text and React components
-- **Small context**: the agent does not write, read or fix a Webpack, PostCSS or
-  SWC config. Through a pipe, VBlocks prints only the facts, without the color,
-  icons and header a terminal gets
+- **Small context**:
+  - By default, the agent does not write, read or fix a Webpack, PostCSS or SWC
+    config
+  - VBlocks shows you color, icons and a header in a terminal. When an agent
+    runs VBlocks, it gets the same facts without them
 
 ## Table of contents
 
