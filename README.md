@@ -29,8 +29,8 @@ everything set up.
 
 **🤖 Built for AI agents**
 
-- **[`write-vblocks-app`](.sh41/skills/write-vblocks-app/SKILL.md) skill**:
-  teaches an agent to write, serve and build a VBlocks app
+- **[`use-vblocks`](.sh41/skills/use-vblocks/SKILL.md) skill**: teaches an agent
+  to write, serve and build a VBlocks app
 - **[Agentation](https://www.agentation.com) in development**: click an element
   and write what to change. The agent gets the annotation with the element's
   selector, text and React components
