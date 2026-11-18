@@ -33,6 +33,7 @@
     "url": "git+https://github.com/asd-xiv/vblocks.git"
   },
   "files": [
+    ".sh41/skills",
     "bin",
     "defaults",
     "docs",
