@@ -69,24 +69,25 @@ counts after each edit of the docs -->
 Paths are relative to the package root: the VBlocks repo, or
 `node_modules/@asd14/vblocks/` in the project folder.
 
-**`README.md`**, 494 lines:
+**`README.md`**, 544 lines:
 
-- "## Quick Start" L:68-116
-- "### Keep several apps in one project" L:120-163
-- "### Use `.env` variables" L:165-189
-- "### Import from `src/` with `@self`" L:191-212
-- "### Use CSS Modules" L:214-239
-- "### Import a file as text" L:241-252
-- "### Write a page in Markdown or MDX" L:254-273
-- "### Pick the browsers" L:275-292
-- "### Replace a default config" L:294-324
-- "### Style with Tailwind" L:326-382
-- "### Send UI annotations to an AI agent" L:384-402
-- "### Open the page from another device" L:404-411
-- "### Build a single HTML file" L:413-424
-- "### Add VBlocks to an existing project" L:426-463
-- "## More docs" L:465-472
-- "## Develop" L:474-490
+- "## Quick Start" L:69-117
+- "### Keep several apps in one project" L:121-164
+- "### Use `.env` variables" L:166-190
+- "### Import from `src/` with `@self`" L:192-213
+- "### Use CSS Modules" L:215-240
+- "### Import a file as text" L:242-253
+- "### Write a page in Markdown or MDX" L:255-318
+  - "#### `code` meta as props" L:272-318
+- "### Pick the browsers" L:320-337
+- "### Replace a default config" L:339-369
+- "### Style with Tailwind" L:371-427
+- "### Send UI annotations to an AI agent" L:429-447
+- "### Open the page from another device" L:449-456
+- "### Build a single HTML file" L:458-469
+- "### Add VBlocks to an existing project" L:471-508
+- "## More docs" L:510-519
+- "## Develop" L:521-540
 
 **`docs/REFERENCE.md`**, 321 lines:
 
@@ -112,7 +113,8 @@ Paths are relative to the package root: the VBlocks repo, or
 
 - `01.resolve-dependency-vblocks-folder.md`, 43 lines
 - `02.read-browserslist-config.md`, 36 lines
+- `03.pass-code-meta-as-props.md`, 44 lines
 
 **`types/`**:
 
-- `client.d.ts`, 137 lines
+- `client.d.ts`, 145 lines

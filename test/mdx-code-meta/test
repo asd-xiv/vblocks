@@ -1,0 +1,79 @@
+#!/bin/sh
+
+set -eu
+
+# NAME
+#   test - Build the MDX fixture and check the props of its `code` component
+#
+# SYNOPSIS
+#   test [OPTIONS]
+#
+# DESCRIPTION
+#   Builds the app of this folder as one HTML file, runs the bundle in Node and
+#   compares what it prints with `expected.txt`.
+#
+#   The app prints the props each `code` component receives, one JSON line per
+#   code block of `src/page.md`.
+#
+#   Installs nothing. The app resolves `react` from the `node_modules` of this
+#   repo.
+#
+# OPTIONS
+#   -h, --help    Print this help
+#
+# EXAMPLE
+#   test/mdx-code-meta/test
+#
+# EXIT CODES
+#   0   The output equals `expected.txt`
+#   2   Invalid usage
+#   3   The build failed, or the output differs from `expected.txt`
+#
+# SEE ALSO
+#   bin/vblocks, test/verify-templates/test
+
+case "$#:${1:-}" in
+  1:-h | 1:--help)
+    sed -n '/^# NAME$/,/^$/p' "$0" | sed 's/^# \{0,1\}//'
+    exit 0
+    ;;
+  0:) ;;
+  *)
+    printf 'Usage: test [-h | --help]\n' >&2
+    exit 2
+    ;;
+esac
+
+# This folder is also the app folder: it has `src/index.tsx` and `src/index.html`
+TEST_DIR=$(dirname "$(realpath "$0")")
+VBLOCKS_CMD="$(dirname "$(dirname "$TEST_DIR")")/bin/vblocks"
+ACTUAL_FILE="$TEST_DIR/dist/actual.txt"
+
+if ! "$VBLOCKS_CMD" build --prefix "$TEST_DIR" --single-file; then
+  printf 'The build failed\n' >&2
+  exit 3
+fi
+
+# The single-file build puts the bundle in one `<script>` of index.html. It
+# escapes each `</script` inside the bundle as `\x3C/script`. So the one
+# `<script>` opens the bundle and the one `</script>` closes it. `[\s\S]*`
+# matches across the lines of the bundle
+#
+# `runInThisContext` runs the bundle as a script in the global scope of Node.
+# The bundle uses no DOM. It needs only Node globals that a new `vm` context
+# would lack, eg. `MessageChannel`, which React's server renderer uses
+#
+# React keeps the event loop of Node open, so exit when the bundle ends
+node -e '
+  const { readFileSync } = require("node:fs")
+  const { runInThisContext } = require("node:vm")
+  const html = readFileSync(process.argv[1], "utf8")
+  runInThisContext(html.match(/<script>([\s\S]*)<\/script>/)[1])
+  process.exit(0)' "$TEST_DIR/dist/index.html" > "$ACTUAL_FILE"
+
+if ! diff -- "$TEST_DIR/expected.txt" "$ACTUAL_FILE" >&2; then
+  printf 'The props of the code components differ from expected.txt\n' >&2
+  exit 3
+fi
+
+exit 0

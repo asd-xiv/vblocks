@@ -52,6 +52,7 @@ everything set up.
   - [Use CSS Modules](#use-css-modules)
   - [Import a file as text](#import-a-file-as-text)
   - [Write a page in Markdown or MDX](#write-a-page-in-markdown-or-mdx)
+    - [`code` meta as props](#code-meta-as-props)
   - [Pick the browsers](#pick-the-browsers)
   - [Replace a default config](#replace-a-default-config)
   - [Style with Tailwind](#style-with-tailwind)
@@ -268,6 +269,50 @@ heading:
 <Intro components={{ h1: Title }} />
 ```
 
+#### `code` meta as props
+
+The `code` component receives the meta of a code block, the text after its
+language, as props. VBlocks reads it with
+[rehype-mdx-code-props](https://github.com/remcohaszing/rehype-mdx-code-props):
+
+````md
+```tsx file="src/app.tsx"
+const a = 1
+```
+````
+
+```tsx
+type CodeProps = {
+  className: string
+  file: string
+  children: string
+}
+
+const Code = ({ className, file, children }: CodeProps) => …
+
+<Intro components={{ code: Code }} />
+// Code receives:
+// {
+//   className: "language-tsx",
+//   file: "src/app.tsx",
+//   children: "const a = 1\n"
+// }
+```
+
+| Meta                 | Prop     |
+| :------------------- | :------- |
+| `file="src/app.tsx"` | a string |
+| `lines={3}`          | a number |
+| `showLines`          | `true`   |
+| `isOff={false}`      | `false`  |
+| `ids={[1, 2]}`       | an array |
+
+`{}` takes any JavaScript expression.
+
+> [!IMPORTANT]\
+> MDX fails the build if a meta is not JSX attributes, eg. `file=src/app.tsx` or
+> `{1,3}`.
+
 > [!NOTE]\
 > The [client types](types/client.d.ts) declare each `.md` and `.mdx` import as
 > a React component.
@@ -470,6 +515,8 @@ npx vblocks build --single-file
   [docs/DECISIONS.md](docs/DECISIONS.md)
 - **Release history**: what each version added, fixed and removed, in
   [GitHub releases](https://github.com/asd-xiv/vblocks/releases)
+- **Migrations**: how to update your code for each major version, in
+  [docs/migrations/](docs/migrations/)
 
 ## Develop
 
@@ -479,15 +526,18 @@ vblocks/
 ├── defaults/    # the configs that eject prints
 ├── template/    # the templates of init
 ├── test/
+│   ├── mdx-code-meta/      # an MDX page with code meta, built and run in Node
 │   └── verify-templates/   # typechecks, builds and serves each template
 └── types/       # client.d.ts
 ```
 
-| Script                     | Does                                                               |
-| :------------------------- | :----------------------------------------------------------------- |
-| `npm run lint`             | Runs ESLint                                                        |
-| `npm run typecheck`        | Typechecks the code and the client types                           |
-| `npm run integration-test` | Typechecks, builds and serves every template `vblocks init` writes |
+| Script                                   | Does                                                                  |
+| :--------------------------------------- | :-------------------------------------------------------------------- |
+| `npm run lint`                           | Runs ESLint                                                           |
+| `npm run typecheck`                      | Typechecks the code and the client types                              |
+| `npm run integration-test`               | Runs both integration tests                                           |
+| `npm run integration-test:templates`     | Typechecks, builds and serves every template `vblocks init` writes    |
+| `npm run integration-test:mdx-code-meta` | Builds an MDX page and checks the props its `code` component receives |
 
 ## License
 

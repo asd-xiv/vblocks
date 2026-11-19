@@ -59,7 +59,9 @@
     "typecheck:code": "tsc --noEmit --project ./.tsconfig/code.json",
     "typecheck:client-types": "tsc --noEmit --project ./.tsconfig/client-types.json",
     "typecheck": "npm run typecheck:code && npm run typecheck:client-types",
-    "integration-test": "test/verify-templates/test"
+    "integration-test:templates": "test/verify-templates/test",
+    "integration-test:mdx-code-meta": "test/mdx-code-meta/test",
+    "integration-test": "npm run integration-test:templates && npm run integration-test:mdx-code-meta"
   },
   "dependencies": {
     "@asd14/fancy-logger": "^2.0.0",
@@ -78,6 +80,7 @@
     "postcss-loader": "^8.2.1",
     "postcss-preset-env": "^11.6.3",
     "react-refresh": "^0.19.0",
+    "rehype-mdx-code-props": "^3.0.1",
     "swc-loader": "^0.2.7",
     "webpack": "^5.112.2",
     "webpack-bundle-analyzer": "^5.4.3",

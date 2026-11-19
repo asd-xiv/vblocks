@@ -11,6 +11,7 @@ import DotenvPlugin from "dotenv-webpack"
 import HtmlWebPackPlugin from "html-webpack-plugin"
 import MiniCssExtractPlugin from "mini-css-extract-plugin"
 import postcss from "postcss"
+import rehypeMdxCodeProps from "rehype-mdx-code-props"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 
 const logger = buildLogger({ namespace: "vblocks", level: "info" })
@@ -400,7 +401,18 @@ export default (
           exclude: /node_modules/,
           resourceQuery: { not: [RAW_QUERY] },
           resolve: swcResolve,
-          use: [swcLoader, { loader: require.resolve("@mdx-js/loader") }],
+          use: [
+            swcLoader,
+            {
+              loader: require.resolve("@mdx-js/loader"),
+              options: {
+                // The meta of a code block, eg. `file="src/app.tsx"`, becomes
+                // props of the `code` component. `tagName: "code"` replaces
+                // the default of the plugin, `pre`
+                rehypePlugins: [[rehypeMdxCodeProps, { tagName: "code" }]],
+              },
+            },
+          ],
         },
         {
           test: /\.module\.css$/,
