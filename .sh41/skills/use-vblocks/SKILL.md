@@ -69,7 +69,7 @@ counts after each edit of the docs -->
 Paths are relative to the package root: the VBlocks repo, or
 `node_modules/@asd14/vblocks/` in the project folder.
 
-**`README.md`**, 492 lines:
+**`README.md`**, 494 lines:
 
 - "## Quick Start" L:68-116
 - "### Keep several apps in one project" L:120-163
@@ -86,7 +86,7 @@ Paths are relative to the package root: the VBlocks repo, or
 - "### Build a single HTML file" L:413-424
 - "### Add VBlocks to an existing project" L:426-463
 - "## More docs" L:465-472
-- "## Develop" L:474-488
+- "## Develop" L:474-490
 
 **`docs/REFERENCE.md`**, 321 lines:
 

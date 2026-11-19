@@ -3,11 +3,11 @@
 set -eu
 
 # NAME
-#   verify-templates - Typecheck, build and serve every template `vblocks init`
+#   test - Typecheck, build and serve every template `vblocks init`
 #   writes
 #
 # SYNOPSIS
-#   verify-templates [OPTIONS] [<template>]
+#   test [OPTIONS] [<template>]
 #
 # DESCRIPTION
 #   For <template>, or each template in `template/`, runs `vblocks init` into
@@ -37,8 +37,8 @@ set -eu
 #   -h, --help    Print this help
 #
 # EXAMPLE
-#   tools/verify-templates
-#   tools/verify-templates xyflow
+#   test/verify-templates/test
+#   test/verify-templates/test xyflow
 #
 # EXIT CODES
 #   0   Every template typechecked, built and served
@@ -48,7 +48,7 @@ set -eu
 # SEE ALSO
 #   bin/vblocks
 
-VBLOCKS_PKG_ROOT_DIR=$(dirname "$(dirname "$(realpath "$0")")")
+VBLOCKS_PKG_ROOT_DIR=$(dirname "$(dirname "$(dirname "$(realpath "$0")")")")
 VBLOCKS_CMD="$VBLOCKS_PKG_ROOT_DIR/bin/vblocks"
 # Use the `tsc` of this repo, as with the dependencies of the templates
 TSC_CMD=$(node -p \
@@ -178,7 +178,7 @@ case "$#:${1:-}" in
   # No positional, or one that is not a flag
   0: | 1:[!-]*) ;;
   *)
-    printf 'Usage: verify-templates [-h | --help] [<template>]\n' >&2
+    printf 'Usage: test [-h | --help] [<template>]\n' >&2
     exit 2
     ;;
 esac

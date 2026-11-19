@@ -478,14 +478,16 @@ vblocks/
 ├── bin/         # vblocks, and one file per command in vblocks.d/
 ├── defaults/    # the configs that eject prints
 ├── template/    # the templates of init
+├── test/
+│   └── verify-templates/   # typechecks, builds and serves each template
 └── types/       # client.d.ts
 ```
 
-| Script              | Does                                                               |
-| :------------------ | :----------------------------------------------------------------- |
-| `npm run lint`      | Runs ESLint                                                        |
-| `npm run typecheck` | Typechecks the code and the client types                           |
-| `npm run unit-test` | Typechecks, builds and serves every template `vblocks init` writes |
+| Script                     | Does                                                               |
+| :------------------------- | :----------------------------------------------------------------- |
+| `npm run lint`             | Runs ESLint                                                        |
+| `npm run typecheck`        | Typechecks the code and the client types                           |
+| `npm run integration-test` | Typechecks, builds and serves every template `vblocks init` writes |
 
 ## License
 

@@ -68,8 +68,8 @@ jobs:
         id: list
         run: printf 'templates=%s\n' "$(bin/vblocks init --list | jq -nRc '[inputs]')" >> "$GITHUB_OUTPUT"
 
-  unit-test:
-    name: Unit Test (${{ matrix.template }})
+  integration-test:
+    name: Integration Test (${{ matrix.template }})
     needs: [list-templates]
     runs-on: ubuntu-latest
     strategy:
@@ -91,7 +91,7 @@ jobs:
           path: node_modules
           key: node-modules-${{ inputs.cache-key }}
 
-      - name: Run unit tests
+      - name: Run integration tests
         env:
           TEMPLATE: ${{ matrix.template }}
-        run: npm run unit-test -- "$TEMPLATE"
+        run: npm run integration-test -- "$TEMPLATE"
