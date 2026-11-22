@@ -63,8 +63,8 @@ together -->
 
 ## Index
 
-<!-- sh41: tools/get-skill-index-lines --write recomputes the lines and the
-counts after each edit of the docs -->
+<!-- sh41: scripts/get-skill-index-lines --write, in the write-sh41-skill skill,
+recomputes the lines and the counts after each edit of the docs -->
 
 Paths are relative to the package root: the VBlocks repo, or
 `node_modules/@asd14/vblocks/` in the project folder.
