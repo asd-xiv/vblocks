@@ -53,17 +53,6 @@ together -->
 - Import a Markdown or MDX file as a component:\
   `import {{Intro}} from "{{./intro.mdx}}"`
 
-## Conventions
-
-- Write no Webpack, PostCSS or SWC config. The defaults cover a React app
-  - To change part of a config, import it from `@asd14/vblocks/postcss` or
-    `@asd14/vblocks/webpack` in a config of the same name in the app folder,
-    change it, and return it
-  - For an advanced use, eg. a micro-frontend, eject the default with
-    `vblocks eject` and edit the copy
-- Put each concern that `src/index.tsx` imports in its own
-  `src/index.<concern>.tsx`, eg. `index.app.tsx` defines `App`
-
 ## Index
 
 <!-- sh41: scripts/get-skill-index-lines --write, in the write-sh41-skill skill,
