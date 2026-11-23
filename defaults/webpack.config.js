@@ -128,7 +128,7 @@ const getCssLoaders = ({ classScope, isProduction, postcssConfigPath }) => [
 const MAX_REPORTED_FILE_EVENTS = 5
 
 /**
- * In serve, print each file of the build that was updated, added or dropped
+ * In serve, print each file of the build that was updated, added or deleted
  * since the last compile, as $APP_DIR/...
  *
  * @param {string} appDir
@@ -137,7 +137,7 @@ const MAX_REPORTED_FILE_EVENTS = 5
 const reportFileEvents = appDir => compiler => {
   /** @type {Set<string> | undefined} */
   let previousFiles
-  /** @type {Array<["Updated" | "Added" | "Dropped", string]>} */
+  /** @type {Array<["Updated" | "Added" | "Deleted", string]>} */
   let fileEvents = []
 
   // The watcher also reports editor swap files and folders, eg. the src/ that
@@ -153,7 +153,7 @@ const reportFileEvents = appDir => compiler => {
       }
     }
     for (const file of watcher.removedFiles ?? []) {
-      if (previousFiles?.has(file)) fileEvents.push(["Dropped", file])
+      if (previousFiles?.has(file)) fileEvents.push(["Deleted", file])
     }
   })
 
@@ -188,7 +188,7 @@ const reportFileEvents = appDir => compiler => {
 
 /**
  * Replace every script and stylesheet tag of the HTML with the content of the
- * file it points at. Point the icon tag at a data URL of its file. Then drop
+ * file it points at. Point the icon tag at a data URL of its file. Then delete
  * each of those files from the output.
  *
  * Lives in this file so an ejected config stays one file.
@@ -294,11 +294,25 @@ const RAW_QUERY = /[?&]raw(?:&|$)/
  */
 
 /**
+ * Return the Webpack config of the app. VBlocks passes the environment and the
+ * props, so an app's own `webpack.config.js` passes them on.
+ *
  * @param {VBlocksEnvironment} environment
  * @param {VBlocksProps} props
  * @returns {WebpackConfiguration}
+ *
+ * @example
+ * // webpack.config.js, in the app folder
+ * import { getWebpackConfig } from "@asd14/vblocks/webpack"
+ *
+ * export default (environment, props) => {
+ *   const config = getWebpackConfig(environment, props)
+ *   config.watchOptions = { aggregateTimeout: 200 }
+ *
+ *   return config
+ * }
  */
-export default (
+const getWebpackConfig = (
   {
     entryDir,
     postcssConfigPath,
@@ -470,7 +484,7 @@ export default (
           // every path
           historyApiFallback: true,
 
-          // Hot Module Replacement updates, adds and drops modules in the running
+          // Hot Module Replacement updates, adds and removes modules in the running
           // app, without a full reload
           // https://webpack.js.org/concepts/hot-module-replacement/
           hot: true,
@@ -591,7 +605,7 @@ export default (
     },
 
     optimization: {
-      // Mark unused exports, so the minifier drops them
+      // Mark unused exports, so the minifier removes them
       usedExports: true,
 
       // Merge runtime.js into main.js for fewer HTTP requests
@@ -628,3 +642,5 @@ export default (
     },
   }
 }
+
+export { getWebpackConfig as default, getWebpackConfig }

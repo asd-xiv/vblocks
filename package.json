@@ -45,6 +45,8 @@
     "./client": {
       "types": "./types/client.d.ts"
     },
+    "./postcss": "./defaults/postcss.config.js",
+    "./webpack": "./defaults/webpack.config.js",
     "./package.json": "./package.json"
   },
   "bin": {
