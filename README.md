@@ -362,11 +362,10 @@ A config in your app folder replaces the VBlocks default of the same name:
    npx vblocks eject postcss > postcss.config.js
    ```
 
-   > [!IMPORTANT]\
-   > Node resolves the packages an ejected config imports from the project
-   > folder, not from the VBlocks folder. Install them there. To keep the
-   > VBlocks config and change part of it, [extend it](#extend-a-config)
-   > instead.
+> [!IMPORTANT]\
+> Node resolves the packages an ejected config imports from the project folder,
+> not from the VBlocks folder. Install them there. To keep the VBlocks config
+> and change part of it, [extend it](#extend-a-config) instead.
 
 2. **Install the packages it imports**, see its `import` lines
 
