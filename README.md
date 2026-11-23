@@ -367,15 +367,33 @@ A config in your app folder replaces the VBlocks default of the same name:
 > not from the VBlocks folder. Install them there. To keep the VBlocks config
 > and change part of it, [extend it](#extend-a-config) instead.
 
-2. **Install the packages it imports**, see its `import` lines
+2. **Install the packages it imports, and the ones you add**, eg. one that adds
+   the `@custom-media` definitions of `src/media.css` to every CSS file
 
    ```sh
-   npm install --save-dev postcss-preset-env cssnano
+   npm install --save-dev postcss-preset-env cssnano @csstools/postcss-global-data
    ```
 
    `swc` and `browserslist` import nothing.
 
 3. **Update the ejected file**
+
+   ```diff
+   +import { fileURLToPath } from "node:url"
+   +
+   +import postcssGlobalData from "@csstools/postcss-global-data"
+    import cssnano from "cssnano"
+    import postcssPresetEnv from "postcss-preset-env"
+   +
+   +const MEDIA = fileURLToPath(new URL("src/media.css", import.meta.url))
+
+    /** … */
+    const getPostcssConfig = ({ mode }) => ({
+      plugins: [
+   +    // First, so postcss-preset-env finds the `(--name)` definitions it replaces
+   +    postcssGlobalData({ files: [MEDIA] }),
+        postcssPresetEnv({ stage: 2 }),
+   ```
 
 ### Extend a config
 
@@ -386,35 +404,39 @@ so you install only the ones you add.
 
 #### PostCSS
 
-1. **Install your plugin**, eg. one that adds the `@custom-media` definitions of
-   `src/media.css` to every CSS file
+1. **Install the plugin you add**, eg. cssnano, with options of your own
 
    ```sh
-   npm install --save-dev @csstools/postcss-global-data
+   npm install --save-dev cssnano
    ```
 
-2. **Add it to the VBlocks config, in `postcss.config.js`**
+2. **Replace the VBlocks cssnano, in `postcss.config.js`**
 
    ```js
-   import { fileURLToPath } from "node:url"
-
    import { getPostcssConfig } from "@asd14/vblocks/postcss"
-   import postcssGlobalData from "@csstools/postcss-global-data"
+   import cssnano from "cssnano"
 
-   const MEDIA = fileURLToPath(new URL("src/media.css", import.meta.url))
+   // The default preset, which also removes the `/*!` comments
+   const CSSNANO_OPTIONS = {
+     preset: ["default", { discardComments: { removeAll: true } }],
+   }
 
    export default api => {
-     const config = getPostcssConfig(api)
-     // First, so postcss-preset-env finds the `(--name)` definitions it replaces
-     config.plugins.unshift(postcssGlobalData({ files: [MEDIA] }))
+     const {
+       plugins: [presetEnv],
+     } = getPostcssConfig(api)
 
-     return config
+     return {
+       plugins: [
+         presetEnv,
+         ...(api.mode === "production" ? [cssnano(CSSNANO_OPTIONS)] : []),
+       ],
+     }
    }
    ```
 
    PostCSS runs the plugins in array order: `postcss-preset-env`, then `cssnano`
-   in `production`. To replace one, destructure the array, eg.
-   `const { plugins: [presetEnv, cssnano] } = getPostcssConfig(api)`
+   in `production`. Destructure the array to keep the ones you want.
 
 See also: [`@asd14/vblocks/postcss`](docs/REFERENCE.md#asd14vblockspostcss)
 

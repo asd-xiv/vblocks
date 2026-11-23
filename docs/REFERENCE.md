@@ -385,11 +385,24 @@ import postcssPresetEnv from "postcss-preset-env"
  * @example
  * // postcss.config.js, in the app folder
  * import { getPostcssConfig } from "@asd14/vblocks/postcss"
+ * import cssnano from "cssnano"
+ *
+ * // The default preset, which also removes the `/*!` comments
+ * const CSSNANO_OPTIONS = {
+ *   preset: ["default", { discardComments: { removeAll: true } }],
+ * }
  *
  * export default api => {
- *   const { plugins: [presetEnv, cssnano] } = getPostcssConfig(api)
+ *   const {
+ *     plugins: [presetEnv],
+ *   } = getPostcssConfig(api)
  *
- *   return { plugins: [presetEnv, ...(cssnano ? [cssnano] : [])] }
+ *   return {
+ *     plugins: [
+ *       presetEnv,
+ *       ...(api.mode === "production" ? [cssnano(CSSNANO_OPTIONS)] : []),
+ *     ],
+ *   }
  * }
  */
 const getPostcssConfig = ({ mode }) => ({
@@ -503,11 +516,24 @@ getPostcssConfig(api: {
 ```js
 // postcss.config.js, in the app folder
 import { getPostcssConfig } from "@asd14/vblocks/postcss"
+import cssnano from "cssnano"
+
+// The default preset, which also removes the `/*!` comments
+const CSSNANO_OPTIONS = {
+  preset: ["default", { discardComments: { removeAll: true } }],
+}
 
 export default api => {
-  const { plugins: [presetEnv, cssnano] } = getPostcssConfig(api)
+  const {
+    plugins: [presetEnv],
+  } = getPostcssConfig(api)
 
-  return { plugins: [presetEnv, ...(cssnano ? [cssnano] : [])] }
+  return {
+    plugins: [
+      presetEnv,
+      ...(api.mode === "production" ? [cssnano(CSSNANO_OPTIONS)] : []),
+    ],
+  }
 }
 ```
 

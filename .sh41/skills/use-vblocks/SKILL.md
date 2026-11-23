@@ -72,7 +72,7 @@ recomputes the lines and the counts after each edit of the docs -->
 Paths are relative to the package root: the VBlocks repo, or
 `node_modules/@asd14/vblocks/` in the project folder.
 
-**`README.md`**, 614 lines:
+**`README.md`**, 635 lines:
 
 - "## Quick Start" L:72-120
 - "### Keep several apps in one project" L:124-167
@@ -83,19 +83,19 @@ Paths are relative to the package root: the VBlocks repo, or
 - "### Write a page in Markdown or MDX" L:258-321
   - "#### `code` meta as props" L:275-321
 - "### Pick the browsers" L:323-340
-- "### Replace a config" L:342-379
-- "### Extend a config" L:381-440
-  - "#### PostCSS" L:388-420
-  - "#### Webpack" L:422-440
-- "### Style with Tailwind" L:442-497
-- "### Send UI annotations to an AI agent" L:499-517
-- "### Open the page from another device" L:519-526
-- "### Build a single HTML file" L:528-539
-- "### Add VBlocks to an existing project" L:541-578
-- "## More docs" L:580-589
-- "## Develop" L:591-610
+- "### Replace a config" L:342-396
+- "### Extend a config" L:398-461
+  - "#### PostCSS" L:405-441
+  - "#### Webpack" L:443-461
+- "### Style with Tailwind" L:463-518
+- "### Send UI annotations to an AI agent" L:520-538
+- "### Open the page from another device" L:540-547
+- "### Build a single HTML file" L:549-560
+- "### Add VBlocks to an existing project" L:562-599
+- "## More docs" L:601-610
+- "## Develop" L:612-631
 
-**`docs/REFERENCE.md`**, 605 lines:
+**`docs/REFERENCE.md`**, 631 lines:
 
 - "## Domain Vocabulary" L:27-35
 - "### `vblocks`" L:39-75
@@ -104,13 +104,13 @@ Paths are relative to the package root: the VBlocks repo, or
 - "### `vblocks build`" L:191-264
 - "### `vblocks eject`" L:266-304
 - "### `webpack.config.js`" L:314-354
-- "### `postcss.config.js`" L:356-409
-- "### `.swcrc`" L:411-461
-- "### `.browserslistrc`" L:463-483
-- "### `@asd14/vblocks/postcss`" L:489-526
-- "### `@asd14/vblocks/webpack`" L:528-580
-- "## Templates" L:582-597
-- "## Environment variables" L:599-605
+- "### `postcss.config.js`" L:356-422
+- "### `.swcrc`" L:424-474
+- "### `.browserslistrc`" L:476-496
+- "### `@asd14/vblocks/postcss`" L:502-552
+- "### `@asd14/vblocks/webpack`" L:554-606
+- "## Templates" L:608-623
+- "## Environment variables" L:625-631
 
 **`template/`**:
 
