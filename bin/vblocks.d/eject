@@ -10,9 +10,9 @@
 #   eject prints the config to stdout. Save it in the app folder. serve and
 #   build then run with it in place of the VBlocks default.
 #
-#   An ejected config loads its plugins and loaders from the project folder,
-#   not from VBlocks. Install them there. serve and build still run the
-#   webpack-cli, webpack and webpack-dev-server of VBlocks.
+#   Node resolves the packages an ejected config imports from the project
+#   folder, not from the VBlocks folder. Install them there. serve and build
+#   still run the webpack-cli, webpack and webpack-dev-server of VBlocks.
 #
 # ARGUMENTS
 #   config   webpack        Save it as webpack.config.js

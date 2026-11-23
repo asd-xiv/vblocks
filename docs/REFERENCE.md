@@ -11,6 +11,14 @@
   - [`vblocks serve`](#vblocks-serve)
   - [`vblocks build`](#vblocks-build)
   - [`vblocks eject`](#vblocks-eject)
+- [Configs](#configs)
+  - [`webpack.config.js`](#webpackconfigjs)
+  - [`postcss.config.js`](#postcssconfigjs)
+  - [`.swcrc`](#swcrc)
+  - [`.browserslistrc`](#browserslistrc)
+- [Exports](#exports)
+  - [`@asd14/vblocks/postcss`](#asd14vblockspostcss)
+  - [`@asd14/vblocks/webpack`](#asd14vblockswebpack)
 - [Templates](#templates)
 - [Environment variables](#environment-variables)
 
@@ -270,13 +278,13 @@ vblocks eject <config>
 npx vblocks eject postcss > postcss.config.js
 ```
 
-| Name           | Description                                  |
-| :------------- | :------------------------------------------- |
-| `config`       | `webpack`: Save it as `webpack.config.js`    |
-|                | `postcss`: Save it as `postcss.config.js`    |
-|                | `swc`: Save it as `.swcrc`                   |
-|                | `browserslist`: Save it as `.browserslistrc` |
-| `-h`, `--help` | Print this help                              |
+| Name           | Description                                                     |
+| :------------- | :-------------------------------------------------------------- |
+| `config`       | `webpack`: Save it as [`webpack.config.js`](#webpackconfigjs)   |
+|                | `postcss`: Save it as [`postcss.config.js`](#postcssconfigjs)   |
+|                | `swc`: Save it as [`.swcrc`](#swcrc)                            |
+|                | `browserslist`: Save it as [`.browserslistrc`](#browserslistrc) |
+| `-h`, `--help` | Print this help                                                 |
 
 | Exit code | Means         |
 | :-------- | :------------ |
@@ -286,12 +294,288 @@ npx vblocks eject postcss > postcss.config.js
 `eject` prints the config to stdout. Save it in the app folder. `serve` and
 `build` then run with it in place of the VBlocks default.
 
-An ejected config loads its plugins and loaders from the project folder, not
-from VBlocks. Install them there. `serve` and `build` still run the
-`webpack-cli`, `webpack` and `webpack-dev-server` of VBlocks.
+Node resolves the packages an ejected config imports from the project folder,
+not from the VBlocks folder. Install them there. `serve` and `build` still run
+the `webpack-cli`, `webpack` and `webpack-dev-server` of VBlocks.
 
 See also: [`vblocks`](#vblocks), [`vblocks serve`](#vblocks-serve),
-[`vblocks build`](#vblocks-build)
+[`vblocks build`](#vblocks-build), [Configs](#configs)
+
+</details>
+
+## Configs
+
+A config in the app folder replaces the VBlocks default of the same name.
+[`vblocks eject`](#vblocks-eject) prints a default.
+
+To change part of the webpack or postcss default instead of replacing it, extend
+it with an [export](#exports).
+
+### `webpack.config.js`
+
+Bundle `src/index.tsx`, `src/index.css` if it exists, and `src/index.html` into
+`dist/`
+
+```sh
+npx vblocks eject webpack > webpack.config.js
+```
+
+<details>
+<summary>Loaders, plugins</summary>
+
+| Files                                   | Loaders, in the order they run, or the output                                                                                   |
+| :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------ |
+| `*.ts`, `*.tsx`, outside `node_modules` | `swc-loader`, with [`.swcrc`](#swcrc)                                                                                           |
+| `*.md`, `*.mdx`, outside `node_modules` | `@mdx-js/loader`, with `rehype-mdx-code-props`, then `swc-loader`                                                               |
+| `*.css`                                 | `postcss-loader`, with [`postcss.config.js`](#postcssconfigjs), then `css-loader`, then the loader of `mini-css-extract-plugin` |
+| `*.module.css`                          | the same, and `css-loader` renames each class to a unique name, see [Use CSS Modules](../README.md#use-css-modules)             |
+| `*.jpg`, `*.gif`, `*.png`, `*.svg`      | a data URL up to 10 KiB, a file above it. With `--single-file`, a data URL                                                      |
+| `*.woff`, `*.woff2`, `*.ttf`, `*.eot`   | a file in `dist/fonts/`. With `--single-file`, a data URL                                                                       |
+| a `?raw` import                         | the text of the file                                                                                                            |
+
+- `html-webpack-plugin` writes `dist/index.html` from `src/index.html`, with
+  `favicon.svg`
+- `mini-css-extract-plugin` writes the CSS into `dist/css/`
+- `dotenv-webpack` replaces each `process.env["NAME"]` with its value in the
+  `.env` of the app folder
+- `copy-webpack-plugin` copies `robots.txt` into `dist/`, except with
+  `--single-file`
+- With `--single-file`, the build puts every script, stylesheet and the favicon
+  into `dist/index.html`
+- `serve` prints each file of the build that changed since the last compile
+- `@pmmmwh/react-refresh-webpack-plugin` runs in `serve`, in `development`
+- `webpack-bundle-analyzer` runs with `serve --analyze`
+
+[`vblocks build`](#vblocks-build) lists what `dist/` contains.
+
+To change part of it, extend it with
+[`@asd14/vblocks/webpack`](#asd14vblockswebpack).
+
+</details>
+
+### `postcss.config.js`
+
+Compile nesting, `oklch()` and `color-mix()` for the browsers of
+[`.browserslistrc`](#browserslistrc), and add vendor prefixes. Minify the CSS in
+`production`
+
+```sh
+npx vblocks eject postcss > postcss.config.js
+```
+
+<details>
+<summary>The default</summary>
+
+```js
+import cssnano from "cssnano"
+import postcssPresetEnv from "postcss-preset-env"
+
+/**
+ * Return the PostCSS config of the app: `postcss-preset-env`, and `cssnano` in
+ * `production`.
+ *
+ * Node resolves the plugins from the folder of this file.
+ * In an app, install them: `npm install --save-dev postcss-preset-env cssnano`.
+ * To keep the VBlocks plugins and add yours, import `getPostcssConfig` from
+ * `@asd14/vblocks/postcss` instead.
+ *
+ * @param {{ mode: "production" | "development" | "none" }} api
+ * @returns {{ plugins: import("postcss").AcceptedPlugin[] }}
+ *
+ * @example
+ * // postcss.config.js, in the app folder
+ * import { getPostcssConfig } from "@asd14/vblocks/postcss"
+ *
+ * export default api => {
+ *   const { plugins: [presetEnv, cssnano] } = getPostcssConfig(api)
+ *
+ *   return { plugins: [presetEnv, ...(cssnano ? [cssnano] : [])] }
+ * }
+ */
+const getPostcssConfig = ({ mode }) => ({
+  plugins: [
+    postcssPresetEnv({ stage: 2 }),
+    // `preset` stops cssnano from reading a config file in the current folder
+    ...(mode === "production" ? [cssnano({ preset: "default" })] : []),
+  ],
+})
+
+export { getPostcssConfig as default, getPostcssConfig }
+```
+
+To change part of it, extend it with
+[`@asd14/vblocks/postcss`](#asd14vblockspostcss).
+
+</details>
+
+### `.swcrc`
+
+Compile TypeScript and TSX, with the automatic runtime of React, for the
+browsers of [`.browserslistrc`](#browserslistrc)
+
+```sh
+npx vblocks eject swc > .swcrc
+```
+
+<details>
+<summary>The default, and the keys VBlocks sets</summary>
+
+```json
+{
+  "$schema": "https://swc.rs/schema.json",
+  "minify": false,
+  "sourceMaps": true,
+  "env": {
+    "mode": "entry",
+    "coreJs": "3.22"
+  },
+  "jsc": {
+    "externalHelpers": true,
+    "minify": {
+      "format": {
+        "comments": "all"
+      }
+    },
+    "parser": {
+      "syntax": "typescript",
+      "tsx": true,
+      "dynamicImport": true
+    },
+    "transform": {
+      "react": {
+        "runtime": "automatic"
+      }
+    }
+  }
+}
+```
+
+VBlocks sets these keys on the `.swcrc`, the default or yours:
+
+| Key                                                              | Value                                                                                                                                                 |
+| :--------------------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `swcrc`                                                          | `false`: SWC reads no other `.swcrc`, eg. the one in the project folder                                                                               |
+| `env.path`                                                       | the app folder, unless yours sets one, so SWC reads the browserslist config from there up                                                             |
+| `jsc.transform.react.development`, `jsc.transform.react.refresh` | `true` in `serve`, in `development`, for React Refresh. Without the React Refresh plugin, `refresh: true` breaks the page, so leave it unset in yours |
+
+</details>
+
+### `.browserslistrc`
+
+The browsers that SWC, Webpack and `postcss-preset-env` compile for
+
+```sh
+npx vblocks eject browserslist > .browserslistrc
+```
+
+<details>
+<summary>The default, and where browserslist reads it</summary>
+
+```text
+> 0.25%, not dead
+```
+
+browserslist reads `BROWSERSLIST`, `BROWSERSLIST_CONFIG`, then a
+`.browserslistrc` or the `browserslist` field of `package.json`, from the app
+folder up. Without any of them, browserslist reads the VBlocks default,
+`defaults/.browserslistrc`. See [Environment variables](#environment-variables).
+
+</details>
+
+## Exports
+
+Each export is a module. It exports its function by name and as the default.
+
+### `@asd14/vblocks/postcss`
+
+Return the PostCSS config of the app: `postcss-preset-env`, and `cssnano` in
+`production`.
+
+```ts
+getPostcssConfig(api: {
+  mode: "production" | "development" | "none"
+}): { plugins: AcceptedPlugin[] }
+```
+
+<details>
+<summary>Example, inputs, returns</summary>
+
+```js
+// postcss.config.js, in the app folder
+import { getPostcssConfig } from "@asd14/vblocks/postcss"
+
+export default api => {
+  const { plugins: [presetEnv, cssnano] } = getPostcssConfig(api)
+
+  return { plugins: [presetEnv, ...(cssnano ? [cssnano] : [])] }
+}
+```
+
+| Name       | Type                                      | Description                                                                                           |
+| :--------- | :---------------------------------------- | :---------------------------------------------------------------------------------------------------- |
+| `api.mode` | `"production" \| "development" \| "none"` | The Webpack mode, `production`, `development` or `none`. With `production`, the config adds `cssnano` |
+
+Returns `{ plugins: AcceptedPlugin[] }`: `postcss-preset-env`, then `cssnano` in
+`production`. `cssnano` is `undefined` outside `production`.
+
+Node resolves the plugins from the VBlocks folder. Install only the plugins you
+add.
+
+See also: [`postcss.config.js`](#postcssconfigjs)
+
+</details>
+
+### `@asd14/vblocks/webpack`
+
+Return the Webpack config of the app.
+
+```ts
+getWebpackConfig(
+  environment: VBlocksEnvironment,
+  props: { mode: "production" | "development" }
+): WebpackConfiguration
+```
+
+<details>
+<summary>Example, inputs, returns</summary>
+
+```js
+// webpack.config.js, in the app folder
+import { getWebpackConfig } from "@asd14/vblocks/webpack"
+
+export default (environment, props) => {
+  const config = getWebpackConfig(environment, props)
+  config.watchOptions = { aggregateTimeout: 200 }
+
+  return config
+}
+```
+
+VBlocks passes the environment and the props, so an app's own
+`webpack.config.js` passes them on.
+
+`environment` has these fields:
+
+| Name                | Type                                       | Default  | Description                                                                        |
+| :------------------ | :----------------------------------------- | :------- | :--------------------------------------------------------------------------------- |
+| `entryDir`          | `string`                                   |          | The app folder: `--prefix`, or the folder VBlocks runs in                          |
+| `postcssConfigPath` | `string`                                   |          | Path to the PostCSS config, the app's own or the default                           |
+| `swcConfigPath`     | `string`                                   |          | Path to the SWC config, the app's own or the default                               |
+| `robotsPath`        | `string`                                   |          | Path to the robots.txt copied to the output folder, missing in a single-file build |
+| `faviconPath`       | `string`                                   |          | Path to the favicon.svg copied to the output folder                                |
+| `single`            | `boolean`                                  |          | Build one standalone index.html, every asset inlined                               |
+| `analyze`           | `boolean`                                  |          | Run the bundle analyzer next to the dev server                                     |
+| `logLevel`          | `"error" \| "warn" \| "info" \| "verbose"` | `"warn"` | How much Webpack and its dev server print                                          |
+| `WEBPACK_SERVE`     | `boolean`                                  |          | webpack-cli sets it for `serve`, and its aliases `server` and `s`                  |
+
+`props` has one field, `mode`: `production` or `development`.
+
+Returns the Webpack `Configuration` that VBlocks runs.
+
+Node resolves its loaders and plugins from the VBlocks folder. Install only the
+packages you add.
+
+See also: [`webpack.config.js`](#webpackconfigjs)
 
 </details>
 
