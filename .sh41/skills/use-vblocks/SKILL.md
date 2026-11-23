@@ -56,6 +56,9 @@ together -->
 ## Conventions
 
 - Write no Webpack, PostCSS or SWC config. The defaults cover a React app
+  - To change part of a config, import it from `@asd14/vblocks/postcss` or
+    `@asd14/vblocks/webpack` in a config of the same name in the app folder,
+    change it, and return it
   - For an advanced use, eg. a micro-frontend, eject the default with
     `vblocks eject` and edit the copy
 - Put each concern that `src/index.tsx` imports in its own
@@ -69,36 +72,45 @@ recomputes the lines and the counts after each edit of the docs -->
 Paths are relative to the package root: the VBlocks repo, or
 `node_modules/@asd14/vblocks/` in the project folder.
 
-**`README.md`**, 544 lines:
+**`README.md`**, 614 lines:
 
-- "## Quick Start" L:69-117
-- "### Keep several apps in one project" L:121-164
-- "### Use `.env` variables" L:166-190
-- "### Import from `src/` with `@self`" L:192-213
-- "### Use CSS Modules" L:215-240
-- "### Import a file as text" L:242-253
-- "### Write a page in Markdown or MDX" L:255-318
-  - "#### `code` meta as props" L:272-318
-- "### Pick the browsers" L:320-337
-- "### Replace a default config" L:339-369
-- "### Style with Tailwind" L:371-427
-- "### Send UI annotations to an AI agent" L:429-447
-- "### Open the page from another device" L:449-456
-- "### Build a single HTML file" L:458-469
-- "### Add VBlocks to an existing project" L:471-508
-- "## More docs" L:510-519
-- "## Develop" L:521-540
+- "## Quick Start" L:72-120
+- "### Keep several apps in one project" L:124-167
+- "### Use `.env` variables" L:169-193
+- "### Import from `src/` with `@self`" L:195-216
+- "### Use CSS Modules" L:218-243
+- "### Import a file as text" L:245-256
+- "### Write a page in Markdown or MDX" L:258-321
+  - "#### `code` meta as props" L:275-321
+- "### Pick the browsers" L:323-340
+- "### Replace a config" L:342-379
+- "### Extend a config" L:381-440
+  - "#### PostCSS" L:388-420
+  - "#### Webpack" L:422-440
+- "### Style with Tailwind" L:442-497
+- "### Send UI annotations to an AI agent" L:499-517
+- "### Open the page from another device" L:519-526
+- "### Build a single HTML file" L:528-539
+- "### Add VBlocks to an existing project" L:541-578
+- "## More docs" L:580-589
+- "## Develop" L:591-610
 
-**`docs/REFERENCE.md`**, 321 lines:
+**`docs/REFERENCE.md`**, 605 lines:
 
-- "## Domain Vocabulary" L:19-27
-- "### `vblocks`" L:31-67
-- "### `vblocks init`" L:69-121
-- "### `vblocks serve`" L:123-181
-- "### `vblocks build`" L:183-256
-- "### `vblocks eject`" L:258-296
-- "## Templates" L:298-313
-- "## Environment variables" L:315-321
+- "## Domain Vocabulary" L:27-35
+- "### `vblocks`" L:39-75
+- "### `vblocks init`" L:77-129
+- "### `vblocks serve`" L:131-189
+- "### `vblocks build`" L:191-264
+- "### `vblocks eject`" L:266-304
+- "### `webpack.config.js`" L:314-354
+- "### `postcss.config.js`" L:356-409
+- "### `.swcrc`" L:411-461
+- "### `.browserslistrc`" L:463-483
+- "### `@asd14/vblocks/postcss`" L:489-526
+- "### `@asd14/vblocks/webpack`" L:528-580
+- "## Templates" L:582-597
+- "## Environment variables" L:599-605
 
 **`template/`**:
 
@@ -106,8 +118,8 @@ Paths are relative to the package root: the VBlocks repo, or
   - "## Plumbing" L:9-25
   - "## App" L:27-49
 - **`plain/README.md`**, 19 lines
-- **`xyflow/README.md`**, 28 lines
-- **`xyflow-tabs/README.md`**, 33 lines
+- **`xyflow/README.md`**, 27 lines
+- **`xyflow-tabs/README.md`**, 32 lines
 
 **`docs/decisions/`**:
 
