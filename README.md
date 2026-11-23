@@ -54,7 +54,10 @@ everything set up.
   - [Write a page in Markdown or MDX](#write-a-page-in-markdown-or-mdx)
     - [`code` meta as props](#code-meta-as-props)
   - [Pick the browsers](#pick-the-browsers)
-  - [Replace a default config](#replace-a-default-config)
+  - [Replace a config](#replace-a-config)
+  - [Extend a config](#extend-a-config)
+    - [PostCSS](#postcss)
+    - [Webpack](#webpack)
   - [Style with Tailwind](#style-with-tailwind)
   - [Send UI annotations to an AI agent](#send-ui-annotations-to-an-ai-agent)
   - [Open the page from another device](#open-the-page-from-another-device)
@@ -154,7 +157,7 @@ contains the plumbing, and each
    + │   └─ tsconfig.json
      ├─ .gitignore
    ! └─ package.json      # + @xyflow/react, tailwindcss, @tailwindcss/postcss,
-   !                      # cssnano, agentation
+   !                      # agentation
    ```
 
 3. **Start a development server for one app**
@@ -336,74 +339,141 @@ Without one, they compile for the VBlocks default, `> 0.25%, not dead`.
 2. **Update the query**, see
    [the queries of browserslist](https://github.com/browserslist/browserslist#queries)
 
-### Replace a default config
+### Replace a config
 
 A config in your app folder replaces the VBlocks default of the same name:
 
-- `webpack.config.js`
-- `postcss.config.js`, the default runs:
+- [`webpack.config.js`](docs/REFERENCE.md#webpackconfigjs)
+- [`postcss.config.js`](docs/REFERENCE.md#postcssconfigjs), the default has two
+  plugins:
   - `postcss-preset-env`, which compiles nesting, `oklch()` and `color-mix()`
-    for older browsers and adds vendor prefixes
+    for the browsers of `.browserslistrc`
+    - It adds vendor prefixes too
   - `cssnano` in `production`
-- `.swcrc`
-- `.browserslistrc`, the default `> 0.25%, not dead`
+- [`.swcrc`](docs/REFERENCE.md#swcrc)
+  - VBlocks still sets four of its keys
+- [`.browserslistrc`](docs/REFERENCE.md#browserslistrc), the default
+  `> 0.25%, not dead`
 
 1. **[Eject](docs/REFERENCE.md#vblocks-eject) the default into your app folder**
 
    ```sh
    cd my-vblocks-app
-   npx vblocks eject swc > .swcrc
+   npx vblocks eject postcss > postcss.config.js
    ```
 
-   An ejected config loads its plugins and loaders from the project folder, not
-   from VBlocks. Install them there.
+   > [!IMPORTANT]\
+   > Node resolves the packages an ejected config imports from the project
+   > folder, not from the VBlocks folder. Install them there. To keep the
+   > VBlocks config and change part of it, [extend it](#extend-a-config)
+   > instead.
 
-2. **Update the ejected file**
+2. **Install the packages it imports**, see its `import` lines
 
-> [!NOTE]\
-> VBlocks does not merge your config with the default, with two exceptions:
->
-> - `.swcrc -> env.path`: VBlocks adds the app folder when yours is missing, so
->   SWC reads the browserslist config
-> - `.swcrc -> jsc.transform.react.refresh`: VBlocks adds the React Refresh
->   transform when `serve` runs in `development` mode
+   ```sh
+   npm install --save-dev postcss-preset-env cssnano
+   ```
+
+   `swc` and `browserslist` import nothing.
+
+3. **Update the ejected file**
+
+### Extend a config
+
+Import the VBlocks config into a config of the same name in your app folder,
+change it, and return it. Only `postcss.config.js` and `webpack.config.js` have
+a VBlocks config to import. Node resolves its packages from the VBlocks folder,
+so you install only the ones you add.
+
+#### PostCSS
+
+1. **Install your plugin**, eg. one that adds the `@custom-media` definitions of
+   `src/media.css` to every CSS file
+
+   ```sh
+   npm install --save-dev @csstools/postcss-global-data
+   ```
+
+2. **Add it to the VBlocks config, in `postcss.config.js`**
+
+   ```js
+   import { fileURLToPath } from "node:url"
+
+   import { getPostcssConfig } from "@asd14/vblocks/postcss"
+   import postcssGlobalData from "@csstools/postcss-global-data"
+
+   const MEDIA = fileURLToPath(new URL("src/media.css", import.meta.url))
+
+   export default api => {
+     const config = getPostcssConfig(api)
+     // First, so postcss-preset-env finds the `(--name)` definitions it replaces
+     config.plugins.unshift(postcssGlobalData({ files: [MEDIA] }))
+
+     return config
+   }
+   ```
+
+   PostCSS runs the plugins in array order: `postcss-preset-env`, then `cssnano`
+   in `production`. To replace one, destructure the array, eg.
+   `const { plugins: [presetEnv, cssnano] } = getPostcssConfig(api)`
+
+See also: [`@asd14/vblocks/postcss`](docs/REFERENCE.md#asd14vblockspostcss)
+
+#### Webpack
+
+1. **Change the VBlocks config, in `webpack.config.js`**
+
+   ```js
+   import { getWebpackConfig } from "@asd14/vblocks/webpack"
+
+   export default (environment, props) => {
+     const config = getWebpackConfig(environment, props)
+     config.watchOptions = { aggregateTimeout: 200 }
+
+     return config
+   }
+   ```
+
+   VBlocks passes the environment and the props, so your `webpack.config.js`
+   passes them on.
+
+See also: [`@asd14/vblocks/webpack`](docs/REFERENCE.md#asd14vblockswebpack)
 
 ### Style with Tailwind
 
 VBlocks does not include Tailwind. Add it through a `postcss.config.js` in your
-app folder:
+app folder.
 
 > [!NOTE]\
 > The `xyflow` and `xyflow-tabs` templates of
-> [`vblocks init`](docs/REFERENCE.md#vblocks-init) have this setup.
+> [`vblocks init`](docs/REFERENCE.md#vblocks-init) write this
+> `postcss.config.js`.
 
-1. **Install Tailwind, its PostCSS plugin and cssnano, which the ejected config
-   imports**
-
-   ```sh
-   npm install --save-dev tailwindcss @tailwindcss/postcss cssnano
-   ```
-
-2. **Eject the default PostCSS config into your app folder**
+1. **Install Tailwind and its PostCSS plugin**
 
    ```sh
-   npx vblocks eject postcss > postcss.config.js
+   npm install --save-dev tailwindcss @tailwindcss/postcss
    ```
 
-3. **Replace `postcss-preset-env` with the Tailwind plugin**
+2. **Replace `postcss-preset-env` with the Tailwind plugin, in
+   `postcss.config.js`**
 
-   ```diff
-   +import tailwindcss from "@tailwindcss/postcss"
-    import cssnano from "cssnano"
-   -import postcssPresetEnv from "postcss-preset-env"
+   ```js
+   import { getPostcssConfig } from "@asd14/vblocks/postcss"
+   import tailwindcss from "@tailwindcss/postcss"
 
-    export default ({ mode }) => ({
-      plugins: [
-   -    postcssPresetEnv({ stage: 2 }),
-   +    tailwindcss({ optimize: mode === "production" }),
-        ...(mode === "production" ? [cssnano({ preset: "default" })] : []),
-      ],
-    })
+   export default api => {
+     const {
+       plugins: [, cssnano],
+     } = getPostcssConfig(api)
+
+     return {
+       plugins: [
+         tailwindcss({ optimize: api.mode === "production" }),
+         ...(cssnano ? [cssnano] : []),
+       ],
+     }
+   }
    ```
 
 > [!IMPORTANT]\
@@ -412,7 +482,7 @@ app folder:
 > itself. With both plugins, `postcss-preset-env` rewrites Tailwind's `@layer`
 > rules into `:not(#\#)` selectors. The CSS file grows.
 
-4. **Add the Tailwind import to `src/index.css`**
+3. **Add the Tailwind import to `src/index.css`**
 
    ```css
    @import "tailwindcss" source(".");
@@ -509,8 +579,8 @@ npx vblocks build --single-file
 
 ## More docs
 
-- **Reference**: every command, template and environment variable, in
-  [docs/REFERENCE.md](docs/REFERENCE.md)
+- **Reference**: every command, config, export, template and environment
+  variable, in [docs/REFERENCE.md](docs/REFERENCE.md)
 - **Decisions**: why the code is this way, in
   [docs/DECISIONS.md](docs/DECISIONS.md)
 - **Release history**: what each version added, fixed and removed, in
