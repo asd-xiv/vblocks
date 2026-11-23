@@ -19,7 +19,7 @@ src/
 │                          # that centers the diagram at 100%
 ├── utils/grid.ts          # CELL_SIZE and toPixels
 └── index.css              # replaces the common one: Tailwind and the xyflow styles
-postcss.config.js          # replaces the VBlocks default: Tailwind, and cssnano in production
+postcss.config.js          # extends the VBlocks default: Tailwind in place of postcss-preset-env
 ```
 
 **Hooks**:
@@ -28,6 +28,5 @@ postcss.config.js          # replaces the VBlocks default: Tailwind, and cssnano
    copy:
    - Adds `@xyflow/react` to the `dependencies` of the nearest `package.json`,
      the one of the [project folder](../../docs/REFERENCE.md#domain-vocabulary)
-   - Adds `tailwindcss`, `@tailwindcss/postcss` and `cssnano` to its
-     `devDependencies`
+   - Adds `tailwindcss` and `@tailwindcss/postcss` to its `devDependencies`
    - Sets the page title in `src/index.html` to `xyflow-tabs :: VBlocks`
