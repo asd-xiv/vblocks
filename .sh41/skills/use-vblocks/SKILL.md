@@ -19,8 +19,8 @@ Next.js does.
 together -->
 
 - An app needs only `src/index.tsx` and `src/index.html`
-- VBlocks supports SWC, PostCSS, CSS Modules, MDX, React Refresh and `.env`
-  files
+- VBlocks supports SWC, PostCSS, CSS Modules, MDX with GFM, React Refresh and
+  `.env` files
 - Several apps can share one `package.json` and `node_modules/`
 - In development, the Agentation toolbar sends UI annotations to an agent
 
@@ -52,6 +52,8 @@ together -->
   `import {{text}} from "{{./note.txt}}?raw"`
 - Import a Markdown or MDX file as a component:\
   `import {{Intro}} from "{{./intro.mdx}}"`
+- Replace the element MDX renders for a tag, eg. each GFM pipe table:\
+  `<Intro components={{ table: Table }} />`
 
 ## Index
 
@@ -61,7 +63,7 @@ recomputes the lines and the counts after each edit of the docs -->
 Paths are relative to the package root: the VBlocks repo, or
 `node_modules/@asd14/vblocks/` in the project folder.
 
-**`README.md`**, 635 lines:
+**`README.md`**, 638 lines:
 
 - "## Quick Start" L:72-120
 - "### Keep several apps in one project" L:124-167
@@ -69,20 +71,20 @@ Paths are relative to the package root: the VBlocks repo, or
 - "### Import from `src/` with `@self`" L:195-216
 - "### Use CSS Modules" L:218-243
 - "### Import a file as text" L:245-256
-- "### Write a page in Markdown or MDX" L:258-321
-  - "#### `code` meta as props" L:275-321
-- "### Pick the browsers" L:323-340
-- "### Replace a config" L:342-396
-- "### Extend a config" L:398-461
-  - "#### PostCSS" L:405-441
-  - "#### Webpack" L:443-461
-- "### Style with Tailwind" L:463-518
-- "### Send UI annotations to an AI agent" L:520-538
-- "### Open the page from another device" L:540-547
-- "### Build a single HTML file" L:549-560
-- "### Add VBlocks to an existing project" L:562-599
-- "## More docs" L:601-610
-- "## Develop" L:612-631
+- "### Write a page in Markdown or MDX" L:258-324
+  - "#### `code` meta as props" L:278-324
+- "### Pick the browsers" L:326-343
+- "### Replace a config" L:345-399
+- "### Extend a config" L:401-464
+  - "#### PostCSS" L:408-444
+  - "#### Webpack" L:446-464
+- "### Style with Tailwind" L:466-521
+- "### Send UI annotations to an AI agent" L:523-541
+- "### Open the page from another device" L:543-550
+- "### Build a single HTML file" L:552-563
+- "### Add VBlocks to an existing project" L:565-602
+- "## More docs" L:604-613
+- "## Develop" L:615-634
 
 **`docs/REFERENCE.md`**, 631 lines:
 

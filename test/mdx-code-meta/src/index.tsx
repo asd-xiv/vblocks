@@ -11,4 +11,12 @@ const Code = (props: Record<string, unknown>) => {
   return null
 }
 
-renderToStaticMarkup(<Page components={{ code: Code }} />)
+// Print `table` when the `table` component receives the pipe table of
+// `src/page.md`. Without remark-gfm, MDX renders it as a paragraph
+const Table = () => {
+  console.log("table")
+
+  return null
+}
+
+renderToStaticMarkup(<Page components={{ code: Code, table: Table }} />)

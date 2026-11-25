@@ -326,7 +326,7 @@ npx vblocks eject webpack > webpack.config.js
 | Files                                   | Loaders, in the order they run, or the output                                                                                   |
 | :-------------------------------------- | :------------------------------------------------------------------------------------------------------------------------------ |
 | `*.ts`, `*.tsx`, outside `node_modules` | `swc-loader`, with [`.swcrc`](#swcrc)                                                                                           |
-| `*.md`, `*.mdx`, outside `node_modules` | `@mdx-js/loader`, with `rehype-mdx-code-props`, then `swc-loader`                                                               |
+| `*.md`, `*.mdx`, outside `node_modules` | `@mdx-js/loader`, with `remark-gfm` and `rehype-mdx-code-props`, then `swc-loader`                                              |
 | `*.css`                                 | `postcss-loader`, with [`postcss.config.js`](#postcssconfigjs), then `css-loader`, then the loader of `mini-css-extract-plugin` |
 | `*.module.css`                          | the same, and `css-loader` renames each class to a unique name, see [Use CSS Modules](../README.md#use-css-modules)             |
 | `*.jpg`, `*.gif`, `*.png`, `*.svg`      | a data URL up to 10 KiB, a file above it. With `--single-file`, a data URL                                                      |

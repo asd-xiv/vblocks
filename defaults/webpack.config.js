@@ -12,6 +12,7 @@ import HtmlWebPackPlugin from "html-webpack-plugin"
 import MiniCssExtractPlugin from "mini-css-extract-plugin"
 import postcss from "postcss"
 import rehypeMdxCodeProps from "rehype-mdx-code-props"
+import remarkGfm from "remark-gfm"
 import { BundleAnalyzerPlugin } from "webpack-bundle-analyzer"
 
 const logger = buildLogger({ namespace: "vblocks", level: "info" })
@@ -420,6 +421,9 @@ const getWebpackConfig = (
             {
               loader: require.resolve("@mdx-js/loader"),
               options: {
+                // remark-gfm adds tables, strikethrough, task lists, autolinks
+                // and footnotes to the CommonMark that MDX reads
+                remarkPlugins: [remarkGfm],
                 // The meta of a code block, eg. `file="src/app.tsx"`, becomes
                 // props of the `code` component. `tagName: "code"` replaces
                 // the default of the plugin, `pre`

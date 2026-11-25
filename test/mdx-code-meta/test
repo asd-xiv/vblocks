@@ -3,7 +3,7 @@
 set -eu
 
 # NAME
-#   test - Build the MDX fixture and check the props of its `code` component
+#   test - Build the MDX fixture and check what its components receive
 #
 # SYNOPSIS
 #   test [OPTIONS]
@@ -13,7 +13,8 @@ set -eu
 #   compares what it prints with `expected.txt`.
 #
 #   The app prints the props each `code` component receives, one JSON line per
-#   code block of `src/page.md`.
+#   code block of `src/page.md`. It prints `table` when the `table` component
+#   receives the pipe table of `src/page.md`.
 #
 #   Installs nothing. The app resolves `react` from the `node_modules` of this
 #   repo.

@@ -20,7 +20,7 @@ everything set up.
 
 **🔋 Maximal support**
 
-- SWC, PostCSS, CSS Modules, MDX, React Refresh, `.env` files
+- SWC, PostCSS, CSS Modules, MDX with GFM, React Refresh, `.env` files
 
 **📦 Several apps, one install**
 
@@ -265,11 +265,14 @@ import Intro from "./intro.mdx"
 const App = () => <Intro />
 ```
 
-Pass `components` to replace the element MDX renders for a tag, eg. each `#`
-heading:
+VBlocks reads GFM (GitHub Flavored Markdown) with
+[remark-gfm](https://github.com/remarkjs/remark-gfm). A page can use tables,
+strikethrough, task lists, autolinks and footnotes.
+
+Pass `components` to replace the element MDX renders for a tag, eg. each table:
 
 ```tsx
-<Intro components={{ h1: Title }} />
+<Intro components={{ table: Table }} />
 ```
 
 #### `code` meta as props
@@ -617,18 +620,18 @@ vblocks/
 ├── defaults/    # the configs that eject prints
 ├── template/    # the templates of init
 ├── test/
-│   ├── mdx-code-meta/      # an MDX page with code meta, built and run in Node
+│   ├── mdx-code-meta/      # an MDX page with code meta and a pipe table, built and run in Node
 │   └── verify-templates/   # typechecks, builds and serves each template
 └── types/       # client.d.ts
 ```
 
-| Script                                   | Does                                                                  |
-| :--------------------------------------- | :-------------------------------------------------------------------- |
-| `npm run lint`                           | Runs ESLint                                                           |
-| `npm run typecheck`                      | Typechecks the code and the client types                              |
-| `npm run integration-test`               | Runs both integration tests                                           |
-| `npm run integration-test:templates`     | Typechecks, builds and serves every template `vblocks init` writes    |
-| `npm run integration-test:mdx-code-meta` | Builds an MDX page and checks the props its `code` component receives |
+| Script                                   | Does                                                                         |
+| :--------------------------------------- | :--------------------------------------------------------------------------- |
+| `npm run lint`                           | Runs ESLint                                                                  |
+| `npm run typecheck`                      | Typechecks the code and the client types                                     |
+| `npm run integration-test`               | Runs both integration tests                                                  |
+| `npm run integration-test:templates`     | Typechecks, builds and serves every template `vblocks init` writes           |
+| `npm run integration-test:mdx-code-meta` | Builds an MDX page and checks what its `code` and `table` components receive |
 
 ## License
 
