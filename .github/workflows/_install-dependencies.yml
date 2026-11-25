@@ -4,8 +4,6 @@ on:
     outputs:
       cache-key:
         value: ${{ jobs.setup.outputs.cache-key }}
-      node-version:
-        value: ${{ jobs.setup.outputs.node-version }}
 
 jobs:
   setup:
@@ -13,14 +11,9 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       cache-key: ${{ steps.cache-key.outputs.hash }}
-      node-version: ${{ steps.nvmrc.outputs.node_version }}
     steps:
       - name: Checkout
         uses: actions/checkout@v6
-
-      - name: Read .nvmrc
-        id: nvmrc
-        run: echo "node_version=$(cat .nvmrc)" >> $GITHUB_OUTPUT
 
       - name: Generate cache key
         id: cache-key
@@ -29,7 +22,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ steps.nvmrc.outputs.node_version }}
+          node-version: ${{ vars.NODE_VERSION }}
           cache: "npm"
 
       - name: Cache node_modules

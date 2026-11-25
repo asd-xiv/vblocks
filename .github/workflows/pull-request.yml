@@ -26,7 +26,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v6
         with:
-          node-version: ${{ needs.install-dependencies.outputs.node-version }}
+          node-version: ${{ vars.NODE_VERSION }}
 
       - name: Restore node_modules
         uses: actions/cache@v5
@@ -45,4 +45,3 @@ jobs:
     uses: ./.github/workflows/_code-qa.yml
     with:
       cache-key: ${{ needs.install-dependencies.outputs.cache-key }}
-      node-version: ${{ needs.install-dependencies.outputs.node-version }}
