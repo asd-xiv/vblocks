@@ -424,10 +424,17 @@ const getWebpackConfig = (
                 // remark-gfm adds tables, strikethrough, task lists, autolinks
                 // and footnotes to the CommonMark that MDX reads
                 remarkPlugins: [remarkGfm],
-                // The meta of a code block, eg. `file="src/app.tsx"`, becomes
-                // props of the `code` component. `tagName: "code"` replaces
-                // the default of the plugin, `pre`
-                rehypePlugins: [[rehypeMdxCodeProps, { tagName: "code" }]],
+                rehypePlugins: [
+                  [
+                    // The meta of a code block, eg. `file="src/app.tsx"`,
+                    // becomes props of the `code` component.
+                    rehypeMdxCodeProps,
+                    {
+                      // `tagName: "code"` replaces the default, `pre`
+                      tagName: "code",
+                    },
+                  ],
+                ],
               },
             },
           ],
