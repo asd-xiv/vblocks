@@ -72,7 +72,7 @@ everything set up.
 ## Quick Start
 
 > [!IMPORTANT]\
-> VBlocks needs Node `^22.22.3`, `^24.15.0` or `>=26.0`.
+> VBlocks needs Node `^22.22.3`, `^24.15.0` or `>=26.13`.
 
 <!--
 Using "scaffold", the field's word for what `init` does, eg. Yeoman and
